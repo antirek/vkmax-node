@@ -1,0 +1,23 @@
+{
+  "name": "vkmax-node",
+  "version": "1.0.0",
+  "description": "Node.js client for VK MAX messenger (OneMe)",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "example": "node examples/weather-userbot.js"
+  },
+  "keywords": ["vk", "max", "oneme", "messenger", "websocket", "client"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.14.2",
+    "uuid": "^9.0.1",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.10",
+    "@types/uuid": "^9.0.7"
+  }
+} 
