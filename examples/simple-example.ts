@@ -1,9 +1,9 @@
-import { MaxClient, sendMessage } from '../src/index.js';
+import { MaxClient } from '../src/index.js';
 
 /**
  * Simple example of using VK MAX client
  */
-async function simpleExample() {
+async function simpleExample(): Promise<void> {
     const client = new MaxClient();
 
     try {

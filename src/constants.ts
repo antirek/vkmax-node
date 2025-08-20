@@ -43,7 +43,7 @@ export const OPCODES = {
     
     // Events
     MESSAGE_RECEIVED: 128
-};
+} as const;
 
 // User agent configuration
 export const USER_AGENT = {
@@ -56,32 +56,37 @@ export const USER_AGENT = {
     appVersion: APP_VERSION,
     screen: "956x1470 2.0x",
     timezone: "Asia/Vladivostok"
-};
+} as const;
 
 // Privacy settings
 export const PRIVACY_SETTINGS = {
     ALL: "ALL",
     CONTACTS: "CONTACTS"
-};
+} as const;
 
 // Message types
 export const MESSAGE_TYPES = {
     TEXT: "TEXT",
     REPLY: "REPLY"
-};
+} as const;
+
+// Type definitions for constants
+export type Opcode = typeof OPCODES[keyof typeof OPCODES];
+export type PrivacySetting = typeof PRIVACY_SETTINGS[keyof typeof PRIVACY_SETTINGS];
+export type MessageType = typeof MESSAGE_TYPES[keyof typeof MESSAGE_TYPES];
 
 // Utility functions
-export function generateRandomId() {
+export function generateRandomId(): number {
     return Math.floor(Math.random() * (2000000000000 - 1750000000000) + 1750000000000);
 }
 
-export function validatePhoneNumber(phone) {
+export function validatePhoneNumber(phone: string): boolean {
     // Basic phone number validation
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
     return phoneRegex.test(phone);
 }
 
-export function validateSmsCode(code) {
+export function validateSmsCode(code: string | number): boolean {
     // SMS code should be 4-6 digits
     const codeRegex = /^\d{4,6}$/;
     return codeRegex.test(String(code));

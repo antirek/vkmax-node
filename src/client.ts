@@ -1,28 +1,39 @@
 import WebSocket from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 import { EventEmitter } from 'events';
-import { WS_HOST, RPC_VERSION, APP_VERSION, USER_AGENT, OPCODES } from './constants.js';
+import { WS_HOST, RPC_VERSION, USER_AGENT, OPCODES } from './constants.js';
+import type {
+    RpcRequest,
+    RpcResponse,
+    AuthToken,
+    VerificationPayload,
+    LoginPayload,
+    IncomingEventCallback,
+    PendingRequest,
+    HelloPayload,
+    KeepalivePayload,
+    LoginByTokenPayload,
+    StartAuthPayload,
+    VerifyCodePayload
+} from './types.js';
 
 /**
  * MaxClient - WebSocket client for VK MAX messenger
  */
 export class MaxClient extends EventEmitter {
-    constructor() {
-        super();
-        this._connection = null;
-        this._isLoggedIn = false;
-        this._seq = 1;
-        this._keepaliveTask = null;
-        this._recvTask = null;
-        this._incomingEventCallback = null;
-        this._pending = new Map();
-        this._isConnected = false;
-    }
+    private _connection: WebSocket | null = null;
+    private _isLoggedIn: boolean = false;
+    private _seq: number = 1;
+    private _keepaliveTask: NodeJS.Timeout | null = null;
+    private _recvTask: NodeJS.Timeout | null = null;
+    private _incomingEventCallback: IncomingEventCallback | null = null;
+    private _pending: Map<number, PendingRequest> = new Map();
+    private _isConnected: boolean = false;
 
     /**
      * Connect to WebSocket server
      */
-    async connect() {
+    async connect(): Promise<WebSocket> {
         if (this._connection) {
             throw new Error("Already connected");
         }
@@ -36,10 +47,10 @@ export class MaxClient extends EventEmitter {
                 console.log('Connected. Receive task started.');
                 this._isConnected = true;
                 this._startRecvLoop();
-                resolve(this._connection);
+                resolve(this._connection!);
             });
             
-            this._connection.on('error', (error) => {
+            this._connection.on('error', (error: Error) => {
                 console.error('WebSocket error:', error);
                 reject(error);
             });
@@ -55,7 +66,7 @@ export class MaxClient extends EventEmitter {
     /**
      * Disconnect from WebSocket server
      */
-    async disconnect() {
+    async disconnect(): Promise<void> {
         if (!this._connection) {
             throw new Error("WebSocket not connected. Call .connect() first.");
         }
@@ -71,13 +82,13 @@ export class MaxClient extends EventEmitter {
     /**
      * Invoke method on server
      */
-    async invokeMethod(opcode, payload) {
+    async invokeMethod(opcode: number, payload: any): Promise<RpcResponse> {
         if (!this._connection) {
             throw new Error("WebSocket not connected. Call .connect() first.");
         }
 
         const seq = this._seq++;
-        const request = {
+        const request: RpcRequest = {
             ver: RPC_VERSION,
             cmd: 0,
             seq: seq,
@@ -90,7 +101,7 @@ export class MaxClient extends EventEmitter {
         return new Promise((resolve, reject) => {
             this._pending.set(seq, { resolve, reject });
             
-            this._connection.send(JSON.stringify(request));
+            this._connection!.send(JSON.stringify(request));
             
             // Timeout after 30 seconds
             setTimeout(() => {
@@ -105,7 +116,7 @@ export class MaxClient extends EventEmitter {
     /**
      * Set callback for incoming events
      */
-    async setCallback(callback) {
+    async setCallback(callback: IncomingEventCallback): Promise<void> {
         if (typeof callback !== 'function') {
             throw new TypeError('callback must be a function');
         }
@@ -115,10 +126,14 @@ export class MaxClient extends EventEmitter {
     /**
      * Start receiving loop
      */
-    _startRecvLoop() {
-        this._connection.on('message', async (data) => {
+    private _startRecvLoop(): void {
+        if (!this._connection) {
+            throw new Error("WebSocket not connected");
+        }
+
+        this._connection.on('message', async (data: Buffer) => {
             try {
-                const packet = JSON.parse(data.toString());
+                const packet: RpcResponse = JSON.parse(data.toString());
                 const seq = packet.seq;
                 const pending = this._pending.get(seq);
                 
@@ -130,7 +145,7 @@ export class MaxClient extends EventEmitter {
                     if (this._incomingEventCallback) {
                         // Run callback asynchronously
                         setImmediate(() => {
-                            this._incomingEventCallback(this, packet);
+                            this._incomingEventCallback!(this, packet);
                         });
                     }
                 }
@@ -143,18 +158,19 @@ export class MaxClient extends EventEmitter {
     /**
      * Send keepalive packet
      */
-    async _sendKeepalivePacket() {
+    private async _sendKeepalivePacket(): Promise<RpcResponse> {
         if (!this._connection) {
             throw new Error("WebSocket not connected. Call .connect() first.");
         }
         
-        await this.invokeMethod(OPCODES.KEEPALIVE, { interactive: false });
+        const payload: KeepalivePayload = { interactive: false };
+        return await this.invokeMethod(OPCODES.KEEPALIVE, payload);
     }
 
     /**
      * Start keepalive loop
      */
-    async _startKeepaliveTask() {
+    private async _startKeepaliveTask(): Promise<void> {
         if (this._keepaliveTask) {
             throw new Error('Keepalive task already started');
         }
@@ -172,7 +188,7 @@ export class MaxClient extends EventEmitter {
     /**
      * Stop keepalive task
      */
-    async _stopKeepaliveTask() {
+    private async _stopKeepaliveTask(): Promise<void> {
         if (this._keepaliveTask) {
             clearInterval(this._keepaliveTask);
             this._keepaliveTask = null;
@@ -183,49 +199,55 @@ export class MaxClient extends EventEmitter {
     /**
      * Send hello packet
      */
-    async _sendHelloPacket() {
-        return await this.invokeMethod(OPCODES.HELLO, {
+    async _sendHelloPacket(): Promise<RpcResponse> {
+        const payload: HelloPayload = {
             userAgent: USER_AGENT,
             deviceId: uuidv4()
-        });
+        };
+        return await this.invokeMethod(OPCODES.HELLO, payload);
     }
 
     /**
      * Send SMS code to phone number
      */
-    async sendCode(phone) {
+    async sendCode(phone: string): Promise<string> {
         if (!this._connection) {
             throw new Error("WebSocket not connected. Call .connect() first.");
         }
         
         await this._sendHelloPacket();
-        const startAuthResponse = await this.invokeMethod(OPCODES.START_AUTH, {
+        const payload: StartAuthPayload = {
             phone: phone,
             type: "START_AUTH",
             language: "ru"
-        });
-        return startAuthResponse.payload.token;
+        };
+        const startAuthResponse = await this.invokeMethod(OPCODES.START_AUTH, payload);
+        return (startAuthResponse.payload as AuthToken).token;
     }
 
     /**
      * Sign in with SMS code
      */
-    async signIn(smsToken, smsCode) {
+    async signIn(smsToken: string, smsCode: string | number): Promise<RpcResponse> {
         if (!this._connection) {
             throw new Error("WebSocket not connected. Call .connect() first.");
         }
         
-        const verificationResponse = await this.invokeMethod(OPCODES.VERIFY_CODE, {
+        const payload: VerifyCodePayload = {
             token: smsToken,
             verifyCode: String(smsCode),
             authTokenType: "CHECK_CODE"
-        });
+        };
+        const verificationResponse = await this.invokeMethod(OPCODES.VERIFY_CODE, payload);
 
-        if (verificationResponse.payload.error) {
-            throw new Error(verificationResponse.payload.error);
+        const responsePayload = verificationResponse.payload as VerificationPayload;
+        if (responsePayload.error) {
+            throw new Error(responsePayload.error);
         }
 
-        console.log(`Successfully logged in as ${verificationResponse.payload.profile.phone}`);
+        if (responsePayload.profile) {
+            console.log(`Successfully logged in as ${responsePayload.profile.phone}`);
+        }
 
         this._isLoggedIn = true;
         await this._startKeepaliveTask();
@@ -236,7 +258,7 @@ export class MaxClient extends EventEmitter {
     /**
      * Login by token
      */
-    async loginByToken(token) {
+    async loginByToken(token: string): Promise<RpcResponse> {
         if (!this._connection) {
             throw new Error("WebSocket not connected. Call .connect() first.");
         }
@@ -244,7 +266,7 @@ export class MaxClient extends EventEmitter {
         await this._sendHelloPacket();
         console.log("using session");
         
-        const loginResponse = await this.invokeMethod(OPCODES.LOGIN_BY_TOKEN, {
+        const payload: LoginByTokenPayload = {
             interactive: true,
             token: token,
             chatsSync: 0,
@@ -252,13 +274,17 @@ export class MaxClient extends EventEmitter {
             presenceSync: 0,
             draftsSync: 0,
             chatsCount: 40
-        });
+        };
+        const loginResponse = await this.invokeMethod(OPCODES.LOGIN_BY_TOKEN, payload);
 
-        if (loginResponse.payload.error) {
-            throw new Error(loginResponse.payload.error);
+        const responsePayload = loginResponse.payload as LoginPayload;
+        if (responsePayload.error) {
+            throw new Error(responsePayload.error);
         }
 
-        console.log(`Successfully logged in as ${loginResponse.payload.profile.phone}`);
+        if (responsePayload.profile) {
+            console.log(`Successfully logged in as ${responsePayload.profile.phone}`);
+        }
 
         this._isLoggedIn = true;
         await this._startKeepaliveTask();
@@ -269,14 +295,14 @@ export class MaxClient extends EventEmitter {
     /**
      * Check if client is logged in
      */
-    get isLoggedIn() {
+    get isLoggedIn(): boolean {
         return this._isLoggedIn;
     }
 
     /**
      * Check if client is connected
      */
-    get isConnected() {
+    get isConnected(): boolean {
         return this._isConnected;
     }
-}
+} 

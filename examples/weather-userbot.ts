@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import readline from 'readline';
 
 import { MaxClient, editMessage } from '../src/index.js';
+import type { RpcResponse } from '../src/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,7 +12,7 @@ const __dirname = path.dirname(__filename);
 /**
  * Get weather information for a city
  */
-async function getWeather(city) {
+async function getWeather(city: string): Promise<string> {
     try {
         const response = await fetch(`https://ru.wttr.in/${encodeURIComponent(city)}?Q&T&format=3`);
         return await response.text();
@@ -24,7 +25,7 @@ async function getWeather(city) {
 /**
  * Create readline interface for user input
  */
-function createReadline() {
+function createReadline(): readline.Interface {
     return readline.createInterface({
         input: process.stdin,
         output: process.stdout
@@ -34,7 +35,7 @@ function createReadline() {
 /**
  * Ask user for input
  */
-function askQuestion(rl, question) {
+function askQuestion(rl: readline.Interface, question: string): Promise<string> {
     return new Promise((resolve) => {
         rl.question(question, resolve);
     });
@@ -43,15 +44,15 @@ function askQuestion(rl, question) {
 /**
  * Packet callback handler
  */
-async function packetCallback(client, packet) {
+async function packetCallback(client: MaxClient, packet: RpcResponse): Promise<void> {
     if (packet.opcode === 128) { // MESSAGE_RECEIVED
-        const messageText = packet.payload.message.text;
+        const messageText = (packet.payload as any).message.text;
         
         if (!['.info', '.weather'].some(cmd => messageText.startsWith(cmd))) {
             return;
         }
 
-        let text;
+        let text: string;
         
         if (messageText === ".info") {
             text = "Userbot connected";
@@ -61,20 +62,22 @@ async function packetCallback(client, packet) {
                 text = "Использование: .weather <город>";
                 await editMessage(
                     client,
-                    packet.payload.chatId,
-                    packet.payload.message.id,
+                    (packet.payload as any).chatId,
+                    (packet.payload as any).message.id,
                     text
                 );
                 return;
             }
             const city = parts.slice(1).join(' ');
             text = await getWeather(city);
+        } else {
+            return; // Should not happen due to the check above
         }
 
         await editMessage(
             client,
-            packet.payload.chatId,
-            packet.payload.message.id,
+            (packet.payload as any).chatId,
+            (packet.payload as any).message.id,
             text
         );
     }
@@ -83,7 +86,7 @@ async function packetCallback(client, packet) {
 /**
  * Main function
  */
-async function main() {
+async function main(): Promise<void> {
     const client = new MaxClient();
     const rl = createReadline();
 
@@ -111,7 +114,7 @@ async function main() {
             const smsCode = await askQuestion(rl, 'Enter SMS code: ');
             const accountData = await client.signIn(smsLoginToken, parseInt(smsCode));
 
-            const loginToken = accountData.payload.tokenAttrs.LOGIN.token;
+            const loginToken = (accountData.payload as any).tokenAttrs.LOGIN.token;
             await fs.writeFile(loginTokenFile, loginToken, 'utf-8');
             console.log('Login token saved to file');
         }

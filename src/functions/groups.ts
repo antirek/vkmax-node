@@ -1,4 +1,6 @@
 import { OPCODES, generateRandomId } from '../constants.js';
+import type { MaxClient } from '../client.js';
+import type { RpcResponse } from '../types.js';
 
 /**
  * Group functions for VK MAX client
@@ -7,7 +9,11 @@ import { OPCODES, generateRandomId } from '../constants.js';
 /**
  * Create group
  */
-export async function createGroup(client, groupName, participantIds) {
+export async function createGroup(
+    client: MaxClient, 
+    groupName: string, 
+    participantIds: string[]
+): Promise<RpcResponse> {
     return await client.invokeMethod(OPCODES.SEND_MESSAGE, {
         message: {
             cid: generateRandomId(),
@@ -28,7 +34,12 @@ export async function createGroup(client, groupName, participantIds) {
 /**
  * Invite users to group
  */
-export async function inviteUsers(client, groupId, participantIds, showHistory = true) {
+export async function inviteUsers(
+    client: MaxClient, 
+    groupId: string, 
+    participantIds: string[], 
+    showHistory: boolean = true
+): Promise<RpcResponse> {
     return await client.invokeMethod(OPCODES.MANAGE_USERS, {
         chatId: groupId,
         userIds: participantIds,
@@ -40,7 +51,12 @@ export async function inviteUsers(client, groupId, participantIds, showHistory =
 /**
  * Remove users from group
  */
-export async function removeUsers(client, groupId, participantIds, deleteMessages = false) {
+export async function removeUsers(
+    client: MaxClient, 
+    groupId: string, 
+    participantIds: string[], 
+    deleteMessages: boolean = false
+): Promise<RpcResponse> {
     const deleteMessagesValue = deleteMessages ? -1 : 0;
     
     return await client.invokeMethod(OPCODES.MANAGE_USERS, {
@@ -54,7 +70,14 @@ export async function removeUsers(client, groupId, participantIds, deleteMessage
 /**
  * Add admin to group
  */
-export async function addAdmin(client, groupId, adminIds, deletingMessages = false, controlParticipants = false, controlAdmins = false) {
+export async function addAdmin(
+    client: MaxClient, 
+    groupId: string, 
+    adminIds: string[], 
+    deletingMessages: boolean = false, 
+    controlParticipants: boolean = false, 
+    controlAdmins: boolean = false
+): Promise<RpcResponse> {
     let permissions = 120;
     
     if (deletingMessages && !controlParticipants && !controlAdmins) permissions = 121;
@@ -78,7 +101,11 @@ export async function addAdmin(client, groupId, adminIds, deletingMessages = fal
 /**
  * Remove admin from group
  */
-export async function removeAdmin(client, groupId, adminIds) {
+export async function removeAdmin(
+    client: MaxClient, 
+    groupId: string, 
+    adminIds: string[]
+): Promise<RpcResponse> {
     return await client.invokeMethod(OPCODES.MANAGE_USERS, {
         chatId: groupId,
         userIds: adminIds,
@@ -90,7 +117,12 @@ export async function removeAdmin(client, groupId, adminIds) {
 /**
  * Get group members
  */
-export async function getGroupMembers(client, groupId, marker = 0, count = 500) {
+export async function getGroupMembers(
+    client: MaxClient, 
+    groupId: string, 
+    marker: number = 0, 
+    count: number = 500
+): Promise<RpcResponse> {
     if (count > 500) {
         throw new Error("Maximum available count is 500");
     }
@@ -106,7 +138,13 @@ export async function getGroupMembers(client, groupId, marker = 0, count = 500) 
 /**
  * Change group settings
  */
-export async function changeGroupSettings(client, groupId, allCanPinMessage = false, onlyOwnerCanChangeIconTitle = true, onlyAdminCanAddMember = true) {
+export async function changeGroupSettings(
+    client: MaxClient, 
+    groupId: string, 
+    allCanPinMessage: boolean = false, 
+    onlyOwnerCanChangeIconTitle: boolean = true, 
+    onlyAdminCanAddMember: boolean = true
+): Promise<RpcResponse> {
     return await client.invokeMethod(OPCODES.CHANGE_GROUP_SETTINGS, {
         chatId: groupId,
         options: {
@@ -120,13 +158,16 @@ export async function changeGroupSettings(client, groupId, allCanPinMessage = fa
 /**
  * Join group by link
  */
-export async function joinGroupByLink(client, linkHash) {
+export async function joinGroupByLink(
+    client: MaxClient, 
+    linkHash: string
+): Promise<RpcResponse> {
     const data = await client.invokeMethod(OPCODES.JOIN_BY_LINK, {
         link: `join/${linkHash}`
     });
     
-    const chatId = data.payload.chat.id;
-    const cid = data.payload.chat.cid;
+    const chatId = (data.payload as any).chat.id;
+    const cid = (data.payload as any).chat.cid;
     
     // Subscribe to the new chat
     await client.invokeMethod(75, {
@@ -149,7 +190,10 @@ export async function joinGroupByLink(client, linkHash) {
 /**
  * Resolve group by link
  */
-export async function resolveGroupByLink(client, linkHash) {
+export async function resolveGroupByLink(
+    client: MaxClient, 
+    linkHash: string
+): Promise<RpcResponse> {
     return await client.invokeMethod(OPCODES.RESOLVE_LINK, {
         link: `join/${linkHash}`
     });

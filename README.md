@@ -1,190 +1,208 @@
-# vkmax-node
+# VK MAX Node.js Client (TypeScript)
 
-Node.js client for VK MAX messenger (OneMe)
+Node.js клиент для VK MAX мессенджера (OneMe) с полной поддержкой TypeScript.
 
-## What is VK MAX?
-MAX (internal code name OneMe) is another project by the Russian government in an attempt to create a unified domestic messaging platform with features such as login via the government services account (Gosuslugi/ESIA).  
-It is developed by VK Group.  
+## Установка
 
-## What is `vkmax-node`?
-This is a Node.js client library for MAX, allowing to create userbots and custom clients.  
-An example of a simple userbot that retrieves weather can be found at [examples/weather-userbot.js](examples/weather-userbot.js).
-
-## Requirements
-- Node.js 18.0.0 or higher (for built-in fetch support)
-
-## Installation
 ```bash
 npm install
 ```
 
-## Usage
+## Сборка
 
-### Basic Example
-```javascript
-import { MaxClient, sendMessage } from './src/index.js';
-
-const client = new MaxClient();
-
-// Connect to WebSocket
-await client.connect();
-
-// Send hello packet (required before authentication)
-await client._sendHelloPacket();
-
-// Authenticate with SMS
-const phoneNumber = '+79001234567';
-const smsToken = await client.sendCode(phoneNumber);
-const accountData = await client.signIn(smsToken, 123456);
-
-// Send a message
-await sendMessage(client, chatId, 'Hello, World!');
-
-// Disconnect
-await client.disconnect();
+```bash
+npm run build
 ```
 
-### Weather Userbot Example
+Для разработки с автоматической пересборкой:
+
+```bash
+npm run dev
+```
+
+## Использование
+
+### Базовый пример
+
+```typescript
+import { MaxClient, sendMessage } from 'vkmax-node';
+
+async function example() {
+    const client = new MaxClient();
+    
+    try {
+        // Подключение к WebSocket
+        await client.connect();
+        
+        // Отправка hello пакета (требуется перед аутентификацией)
+        await client._sendHelloPacket();
+        
+        // Аутентификация через SMS
+        const phone = '+79001234567';
+        const smsToken = await client.sendCode(phone);
+        const smsCode = '1234'; // Код из SMS
+        await client.signIn(smsToken, smsCode);
+        
+        // Отправка сообщения
+        await sendMessage(client, 'chat_id', 'Привет!');
+        
+    } catch (error) {
+        console.error('Ошибка:', error);
+    } finally {
+        await client.disconnect();
+    }
+}
+```
+
+### Аутентификация через токен
+
+```typescript
+import { MaxClient } from 'vkmax-node';
+
+async function loginByToken() {
+    const client = new MaxClient();
+    
+    try {
+        await client.connect();
+        await client.loginByToken('your_saved_token');
+        
+        console.log('Успешно вошли в систему');
+        
+    } catch (error) {
+        console.error('Ошибка входа:', error);
+    }
+}
+```
+
+### Обработка входящих сообщений
+
+```typescript
+import { MaxClient, editMessage } from 'vkmax-node';
+import type { RpcResponse } from 'vkmax-node';
+
+async function handleMessages() {
+    const client = new MaxClient();
+    
+    // Установка callback для входящих событий
+    await client.setCallback(async (client, packet: RpcResponse) => {
+        if (packet.opcode === 128) { // MESSAGE_RECEIVED
+            const messageText = (packet.payload as any).message.text;
+            const chatId = (packet.payload as any).chatId;
+            const messageId = (packet.payload as any).message.id;
+            
+            if (messageText === '.ping') {
+                await editMessage(client, chatId, messageId, 'pong');
+            }
+        }
+    });
+    
+    // Подключение и аутентификация...
+}
+```
+
+## API
+
+### MaxClient
+
+Основной класс клиента.
+
+#### Методы
+
+- `connect()` - Подключение к WebSocket серверу
+- `disconnect()` - Отключение от сервера
+- `sendCode(phone: string)` - Отправка SMS кода на номер телефона
+- `signIn(smsToken: string, smsCode: string | number)` - Вход по SMS коду
+- `loginByToken(token: string)` - Вход по сохраненному токену
+- `setCallback(callback: IncomingEventCallback)` - Установка callback для входящих событий
+
+#### Свойства
+
+- `isLoggedIn: boolean` - Статус входа в систему
+- `isConnected: boolean` - Статус подключения
+
+### Функции сообщений
+
+- `sendMessage(client, chatId, text, notify?)` - Отправка сообщения
+- `editMessage(client, chatId, messageId, text)` - Редактирование сообщения
+- `deleteMessage(client, chatId, messageIds, deleteForMe?)` - Удаление сообщений
+- `readMessage(client, chatId, messageId)` - Отметка сообщения как прочитанного
+- `getMessages(client, chatId, from?, forward?, backward?)` - Получение сообщений
+- `replyMessage(client, chatId, text, replyToMessageId, notify?)` - Ответ на сообщение
+
+### Функции профиля
+
+- `changeOnlineStatusVisibility(client, hidden)` - Скрыть/показать статус онлайн
+- `setIsFindableByPhone(client, findable)` - Настройка поиска по номеру телефона
+- `setCallsPrivacy(client, canBeCalled)` - Настройка приватности звонков
+- `invitePrivacy(client, invitable)` - Настройка приглашений в чаты
+
+### Функции пользователей
+
+- `getContacts(client, contactIds)` - Получение контактов
+- `addContact(client, contactId)` - Добавление контакта
+- `reactToMessage(client, chatId, messageId, reaction)` - Реакция на сообщение
+
+### Функции групп
+
+- `createGroup(client, groupName, participantIds)` - Создание группы
+- `inviteUsers(client, groupId, participantIds, showHistory?)` - Приглашение пользователей
+- `removeUsers(client, groupId, participantIds, deleteMessages?)` - Удаление пользователей
+- `addAdmin(client, groupId, adminIds, deletingMessages?, controlParticipants?, controlAdmins?)` - Добавление администратора
+- `removeAdmin(client, groupId, adminIds)` - Удаление администратора
+- `getGroupMembers(client, groupId, marker?, count?)` - Получение участников группы
+- `changeGroupSettings(client, groupId, allCanPinMessage?, onlyOwnerCanChangeIconTitle?, onlyAdminCanAddMember?)` - Изменение настроек группы
+- `joinGroupByLink(client, linkHash)` - Присоединение к группе по ссылке
+- `resolveGroupByLink(client, linkHash)` - Получение информации о группе по ссылке
+
+### Функции каналов
+
+- `resolveChannelUsername(client, username)` - Получение информации о канале по username
+- `resolveChannelId(client, channelId)` - Получение информации о канале по ID
+- `joinChannel(client, username)` - Присоединение к каналу
+- `createChannel(client, channelName)` - Создание канала
+- `muteChannel(client, channelId, mute?)` - Отключение уведомлений канала
+
+## Примеры
+
+### Простой пример
+
+```bash
+npm run example:simple
+```
+
+### Weather Userbot
+
 ```bash
 npm run example
 ```
 
-This will start a userbot that responds to:
-- `.info` - Shows connection status
-- `.weather <city>` - Shows weather for the specified city
+Этот пример демонстрирует создание бота, который отвечает на команды:
+- `.info` - показывает статус бота
+- `.weather <город>` - показывает погоду в указанном городе
 
-## Features
+## Типы TypeScript
 
-### Authentication
-- SMS-based authentication
-- Token-based authentication (saves login token to file)
-- Automatic keepalive
+Проект полностью типизирован с помощью TypeScript. Все функции, классы и интерфейсы имеют строгую типизацию.
 
-### Messages
-- Send messages
-- Edit messages
-- Delete messages
-- Reply to messages
-- Pin messages
+### Основные типы
 
-### Profile
-- Change profile information
-- Manage privacy settings
-- Control online status visibility
+- `MaxClient` - основной класс клиента
+- `RpcRequest` / `RpcResponse` - типы для RPC запросов/ответов
+- `Message` - тип сообщения
+- `IncomingEventCallback` - тип callback для входящих событий
 
-### Users
-- Get user information
-- Get user status
+## Константы
 
-### Groups
-- Join/leave groups
-- Get group information
-- Manage group members
-- Create/delete group chats
+- `OPCODES` - коды операций
+- `PRIVACY_SETTINGS` - настройки приватности
+- `MESSAGE_TYPES` - типы сообщений
+- `USER_AGENT` - конфигурация User-Agent
 
-### Channels
-- Subscribe/unsubscribe to channels
-- Get channel posts
-- Create/edit/delete channel posts
+## Требования
 
-## API Reference
+- Node.js >= 18.0.0
+- TypeScript >= 5.0.0
 
-### MaxClient
-
-#### Methods
-- `connect()` - Connect to WebSocket server
-- `disconnect()` - Disconnect from server
-- `sendCode(phone)` - Send SMS code to phone number
-- `signIn(smsToken, smsCode)` - Sign in with SMS code
-- `loginByToken(token)` - Login using saved token
-- `setCallback(callback)` - Set callback for incoming events
-- `invokeMethod(opcode, payload)` - Invoke method on server
-
-#### Properties
-- `isLoggedIn` - Check if client is logged in
-- `isConnected` - Check if client is connected
-
-### Message Functions
-- `sendMessage(client, chatId, text, notify)`
-- `editMessage(client, chatId, messageId, text)`
-- `deleteMessage(client, chatId, messageIds, deleteForMe)`
-- `readMessage(client, chatId, messageId)`
-- `getMessages(client, chatId, from, forward, backward)`
-- `replyMessage(client, chatId, text, replyToMessageId, notify)`
-
-### Profile Functions
-- `changeOnlineStatusVisibility(client, hidden)`
-- `setIsFindableByPhone(client, findable)`
-- `setCallsPrivacy(client, canBeCalled)`
-- `invitePrivacy(client, invitable)`
-
-### Group Functions
-- `createGroup(client, groupName, participantIds)`
-- `inviteUsers(client, groupId, participantIds, showHistory)`
-- `removeUsers(client, groupId, participantIds, deleteMessages)`
-- `addAdmin(client, groupId, adminIds, deletingMessages, controlParticipants, controlAdmins)`
-- `removeAdmin(client, groupId, adminIds)`
-- `getGroupMembers(client, groupId, marker, count)`
-- `changeGroupSettings(client, groupId, allCanPinMessage, onlyOwnerCanChangeIconTitle, onlyAdminCanAddMember)`
-- `joinGroupByLink(client, linkHash)`
-- `resolveGroupByLink(client, linkHash)`
-
-### Channel Functions
-- `resolveChannelUsername(client, username)`
-- `resolveChannelId(client, channelId)`
-- `joinChannel(client, username)`
-- `createChannel(client, channelName)`
-- `muteChannel(client, channelId, mute)`
-
-### User Functions
-- `getContacts(client, contactIds)`
-- `addContact(client, contactId)`
-- `reactToMessage(client, chatId, messageId, reaction)`
-
-## Error Handling
-
-The client throws errors for various conditions:
-- Connection errors
-- Authentication failures
-- Invalid method calls
-- Timeout errors
-
-Always wrap your code in try-catch blocks:
-
-```javascript
-try {
-    await client.connect();
-    // ... your code
-} catch (error) {
-    console.error('Error:', error.message);
-}
-```
-
-## Event Handling
-
-The client extends EventEmitter and emits various events:
-
-```javascript
-client.on('error', (error) => {
-    console.error('Client error:', error);
-});
-
-client.on('close', () => {
-    console.log('Connection closed');
-});
-```
-
-## Dependencies
-
-This project uses minimal dependencies:
-- `ws` - WebSocket client
-- `uuid` - UUID generation
-
-Built-in Node.js APIs used:
-- `fetch` - HTTP requests (Node.js 18+)
-- `EventEmitter` - Event handling
-- `readline` - Interactive input
-
-## License
+## Лицензия
 
 MIT 
