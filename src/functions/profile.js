@@ -60,17 +60,4 @@ export async function invitePrivacy(client, invitable) {
             }
         }
     });
-}
-
-/**
- * Changes your public profile
- */
-export async function changeProfile(client, firstName = null, lastName = null, bio = null) {
-    const payload = {};
-    
-    if (firstName !== null) payload.firstName = firstName;
-    if (lastName !== null) payload.lastName = lastName;
-    if (bio !== null) payload.description = bio;
-    
-    return await client.invokeMethod(OPCODES.GET_PROFILE, payload);
 } 

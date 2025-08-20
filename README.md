@@ -10,6 +10,9 @@ It is developed by VK Group.
 This is a Node.js client library for MAX, allowing to create userbots and custom clients.  
 An example of a simple userbot that retrieves weather can be found at [examples/weather-userbot.js](examples/weather-userbot.js).
 
+## Requirements
+- Node.js 18.0.0 or higher (for built-in fetch support)
+
 ## Installation
 ```bash
 npm install
@@ -105,15 +108,38 @@ This will start a userbot that responds to:
 - `sendMessage(client, chatId, text, notify)`
 - `editMessage(client, chatId, messageId, text)`
 - `deleteMessage(client, chatId, messageIds, deleteForMe)`
+- `readMessage(client, chatId, messageId)`
+- `getMessages(client, chatId, from, forward, backward)`
 - `replyMessage(client, chatId, text, replyToMessageId, notify)`
-- `pinMessage(client, chatId, messageId, notify)`
 
 ### Profile Functions
-- `changeProfile(client, firstName, lastName, bio)`
 - `changeOnlineStatusVisibility(client, hidden)`
 - `setIsFindableByPhone(client, findable)`
 - `setCallsPrivacy(client, canBeCalled)`
 - `invitePrivacy(client, invitable)`
+
+### Group Functions
+- `createGroup(client, groupName, participantIds)`
+- `inviteUsers(client, groupId, participantIds, showHistory)`
+- `removeUsers(client, groupId, participantIds, deleteMessages)`
+- `addAdmin(client, groupId, adminIds, deletingMessages, controlParticipants, controlAdmins)`
+- `removeAdmin(client, groupId, adminIds)`
+- `getGroupMembers(client, groupId, marker, count)`
+- `changeGroupSettings(client, groupId, allCanPinMessage, onlyOwnerCanChangeIconTitle, onlyAdminCanAddMember)`
+- `joinGroupByLink(client, linkHash)`
+- `resolveGroupByLink(client, linkHash)`
+
+### Channel Functions
+- `resolveChannelUsername(client, username)`
+- `resolveChannelId(client, channelId)`
+- `joinChannel(client, username)`
+- `createChannel(client, channelName)`
+- `muteChannel(client, channelId, mute)`
+
+### User Functions
+- `getContacts(client, contactIds)`
+- `addContact(client, contactId)`
+- `reactToMessage(client, chatId, messageId, reaction)`
 
 ## Error Handling
 
@@ -147,6 +173,17 @@ client.on('close', () => {
     console.log('Connection closed');
 });
 ```
+
+## Dependencies
+
+This project uses minimal dependencies:
+- `ws` - WebSocket client
+- `uuid` - UUID generation
+
+Built-in Node.js APIs used:
+- `fetch` - HTTP requests (Node.js 18+)
+- `EventEmitter` - Event handling
+- `readline` - Interactive input
 
 ## License
 

@@ -1,103 +1,156 @@
-import { OPCODES } from '../constants.js';
+import { OPCODES, generateRandomId } from '../constants.js';
 
 /**
  * Group functions for VK MAX client
  */
 
 /**
- * Get group info
+ * Create group
  */
-export async function getGroupInfo(client, groupId) {
-    return await client.invokeMethod(OPCODES.GET_GROUP_INFO, {
-        groupId: groupId
+export async function createGroup(client, groupName, participantIds) {
+    return await client.invokeMethod(OPCODES.SEND_MESSAGE, {
+        message: {
+            cid: generateRandomId(),
+            attaches: [
+                {
+                    "_type": "CONTROL",
+                    "event": "new",
+                    "chatType": "CHAT",
+                    "title": groupName,
+                    "userIds": participantIds
+                }
+            ]
+        },
+        notify: true
     });
 }
 
 /**
- * Join group
+ * Invite users to group
  */
-export async function joinGroup(client, groupId) {
-    return await client.invokeMethod(OPCODES.JOIN_GROUP, {
-        groupId: groupId
+export async function inviteUsers(client, groupId, participantIds, showHistory = true) {
+    return await client.invokeMethod(OPCODES.MANAGE_USERS, {
+        chatId: groupId,
+        userIds: participantIds,
+        showHistory: showHistory,
+        operation: "add"
     });
 }
 
 /**
- * Leave group
+ * Remove users from group
  */
-export async function leaveGroup(client, groupId) {
-    return await client.invokeMethod(OPCODES.LEAVE_GROUP, {
-        groupId: groupId
+export async function removeUsers(client, groupId, participantIds, deleteMessages = false) {
+    const deleteMessagesValue = deleteMessages ? -1 : 0;
+    
+    return await client.invokeMethod(OPCODES.MANAGE_USERS, {
+        chatId: groupId,
+        userIds: participantIds,
+        operation: "remove",
+        cleanMsgPeriod: deleteMessagesValue
+    });
+}
+
+/**
+ * Add admin to group
+ */
+export async function addAdmin(client, groupId, adminIds, deletingMessages = false, controlParticipants = false, controlAdmins = false) {
+    let permissions = 120;
+    
+    if (deletingMessages && !controlParticipants && !controlAdmins) permissions = 121;
+    else if (deletingMessages && controlParticipants && !controlAdmins) permissions = 123;
+    else if (!deletingMessages && !controlParticipants && controlAdmins) permissions = 124;
+    else if (deletingMessages && !controlParticipants && controlAdmins) permissions = 125;
+    else if (!deletingMessages && controlParticipants && !controlAdmins) permissions = 250;
+    else if (deletingMessages && controlParticipants && !controlAdmins) permissions = 251;
+    else if (!deletingMessages && controlParticipants && controlAdmins) permissions = 254;
+    else if (deletingMessages && controlParticipants && controlAdmins) permissions = 255;
+    
+    return await client.invokeMethod(OPCODES.MANAGE_USERS, {
+        chatId: groupId,
+        userIds: adminIds,
+        type: "ADMIN",
+        operation: "add",
+        permissions: permissions
+    });
+}
+
+/**
+ * Remove admin from group
+ */
+export async function removeAdmin(client, groupId, adminIds) {
+    return await client.invokeMethod(OPCODES.MANAGE_USERS, {
+        chatId: groupId,
+        userIds: adminIds,
+        type: "ADMIN",
+        operation: "remove"
     });
 }
 
 /**
  * Get group members
  */
-export async function getGroupMembers(client, groupId, offset = 0, count = 50) {
+export async function getGroupMembers(client, groupId, marker = 0, count = 500) {
+    if (count > 500) {
+        throw new Error("Maximum available count is 500");
+    }
+    
     return await client.invokeMethod(OPCODES.GET_GROUP_MEMBERS, {
-        groupId: groupId,
-        offset: offset,
+        type: "MEMBER",
+        marker: marker,
+        chatId: groupId,
         count: count
-    });
-}
-
-/**
- * Invite user to group
- */
-export async function inviteUserToGroup(client, groupId, userId) {
-    return await client.invokeMethod(OPCODES.INVITE_USER_TO_GROUP, {
-        groupId: groupId,
-        userId: userId
-    });
-}
-
-/**
- * Remove user from group
- */
-export async function removeUserFromGroup(client, groupId, userId) {
-    return await client.invokeMethod(OPCODES.REMOVE_USER_FROM_GROUP, {
-        groupId: groupId,
-        userId: userId
     });
 }
 
 /**
  * Change group settings
  */
-export async function changeGroupSettings(client, groupId, settings) {
+export async function changeGroupSettings(client, groupId, allCanPinMessage = false, onlyOwnerCanChangeIconTitle = true, onlyAdminCanAddMember = true) {
     return await client.invokeMethod(OPCODES.CHANGE_GROUP_SETTINGS, {
-        groupId: groupId,
-        settings: settings
+        chatId: groupId,
+        options: {
+            "ONLY_OWNER_CAN_CHANGE_ICON_TITLE": onlyOwnerCanChangeIconTitle,
+            "ALL_CAN_PIN_MESSAGE": allCanPinMessage,
+            "ONLY_ADMIN_CAN_ADD_MEMBER": onlyAdminCanAddMember
+        }
     });
 }
 
 /**
- * Get group chats
+ * Join group by link
  */
-export async function getGroupChats(client, groupId) {
-    return await client.invokeMethod(OPCODES.GET_GROUP_CHATS, {
-        groupId: groupId
+export async function joinGroupByLink(client, linkHash) {
+    const data = await client.invokeMethod(OPCODES.JOIN_BY_LINK, {
+        link: `join/${linkHash}`
     });
+    
+    const chatId = data.payload.chat.id;
+    const cid = data.payload.chat.cid;
+    
+    // Subscribe to the new chat
+    await client.invokeMethod(75, {
+        chatId: chatId,
+        subscribe: true
+    });
+    
+    // Get messages
+    await client.invokeMethod(OPCODES.GET_MESSAGES, {
+        chatId: chatId,
+        from: cid,
+        forward: 0,
+        backward: 30,
+        getMessages: true
+    });
+    
+    return data;
 }
 
 /**
- * Create group chat
+ * Resolve group by link
  */
-export async function createGroupChat(client, groupId, title, description = "") {
-    return await client.invokeMethod(OPCODES.CREATE_GROUP_CHAT, {
-        groupId: groupId,
-        title: title,
-        description: description
-    });
-}
-
-/**
- * Delete group chat
- */
-export async function deleteGroupChat(client, groupId, chatId) {
-    return await client.invokeMethod(OPCODES.DELETE_GROUP_CHAT, {
-        groupId: groupId,
-        chatId: chatId
+export async function resolveGroupByLink(client, linkHash) {
+    return await client.invokeMethod(OPCODES.RESOLVE_LINK, {
+        link: `join/${linkHash}`
     });
 } 

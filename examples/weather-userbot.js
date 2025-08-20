@@ -1,7 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fetch from 'node-fetch';
 import readline from 'readline';
 
 import { MaxClient, editMessage } from '../src/index.js';
@@ -45,10 +44,8 @@ function askQuestion(rl, question) {
  * Packet callback handler
  */
 async function packetCallback(client, packet) {
-            if (packet.opcode === 128) { // MESSAGE_RECEIVED
-        console.log('ii', packet.payload.message);
+    if (packet.opcode === 128) { // MESSAGE_RECEIVED
         const messageText = packet.payload.message.text;
-
         
         if (!['.info', '.weather'].some(cmd => messageText.startsWith(cmd))) {
             return;

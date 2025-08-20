@@ -45,13 +45,27 @@ export async function deleteMessage(client, chatId, messageIds, deleteForMe = fa
 }
 
 /**
- * Pin message in the chat
+ * Read message
  */
-export async function pinMessage(client, chatId, messageId, notify = false) {
-    return await client.invokeMethod(OPCODES.PIN_MESSAGE, {
+export async function readMessage(client, chatId, messageId) {
+    return await client.invokeMethod(OPCODES.READ_MESSAGE, {
+        type: "READ_MESSAGE",
         chatId: chatId,
-        notifyPin: notify,
-        pinMessageId: String(messageId)
+        messageId: String(messageId),
+        mark: generateRandomId()
+    });
+}
+
+/**
+ * Get messages from chat
+ */
+export async function getMessages(client, chatId, from, forward = 0, backward = 30) {
+    return await client.invokeMethod(OPCODES.GET_MESSAGES, {
+        chatId: chatId,
+        from: from,
+        forward: forward,
+        backward: backward,
+        getMessages: true
     });
 }
 
