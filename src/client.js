@@ -173,13 +173,11 @@ export class MaxClient extends EventEmitter {
      * Stop keepalive task
      */
     async _stopKeepaliveTask() {
-        if (!this._keepaliveTask) {
-            throw new Error('Keepalive task is not running');
+        if (this._keepaliveTask) {
+            clearInterval(this._keepaliveTask);
+            this._keepaliveTask = null;
+            console.log('keepalive task stopped');
         }
-
-        clearInterval(this._keepaliveTask);
-        this._keepaliveTask = null;
-        console.log('keepalive task stopped');
     }
 
     /**
@@ -281,4 +279,4 @@ export class MaxClient extends EventEmitter {
     get isConnected() {
         return this._isConnected;
     }
-} 
+}
