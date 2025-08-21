@@ -45,10 +45,10 @@
   },
   "gitRevision": "main",
   "gitRemote": "origin",
-  "sourceLinkTemplate": "https://github.com/your-repo/vkmax-node/blob/{gitRevision}/{path}#L{line}",
+  "sourceLinkTemplate": "https://github.com/antirek/vkmax-node/blob/{gitRevision}/{path}#L{line}",
   "hideGenerator": false,
   "sidebarLinks": {
-    "GitHub": "https://github.com/your-repo/vkmax-node",
+    "GitHub": "https://github.com/antirek/vkmax-node",
     "NPM": "https://www.npmjs.com/package/vkmax-node"
   }
 } 
