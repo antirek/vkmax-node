@@ -3,11 +3,23 @@ import type { MaxClient } from '../client.js';
 import type { RpcResponse } from '../types.js';
 
 /**
- * Channel functions for VK MAX client
+ * Функции для работы с каналами в VK MAX
  */
 
 /**
- * Resolve channel by username
+ * Получение информации о канале по username
+ * 
+ * Получает информацию о канале используя его username без подписки.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param username - Username канала (без @)
+ * @returns Promise<RpcResponse> - Ответ от сервера с информацией о канале
+ * 
+ * @example
+ * ```typescript
+ * const channelInfo = await resolveChannelUsername(client, 'my_channel');
+ * console.log('Информация о канале:', channelInfo.payload);
+ * ```
  */
 export async function resolveChannelUsername(
     client: MaxClient, 
@@ -19,7 +31,19 @@ export async function resolveChannelUsername(
 }
 
 /**
- * Resolve channel by ID
+ * Получение информации о канале по ID
+ * 
+ * Получает информацию о канале используя его ID.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param channelId - ID канала
+ * @returns Promise<RpcResponse> - Ответ от сервера с информацией о канале
+ * 
+ * @example
+ * ```typescript
+ * const channelInfo = await resolveChannelId(client, 'channel123');
+ * console.log('Информация о канале:', channelInfo.payload);
+ * ```
  */
 export async function resolveChannelId(
     client: MaxClient, 
@@ -31,7 +55,19 @@ export async function resolveChannelId(
 }
 
 /**
- * Join channel by username
+ * Подписка на канал по username
+ * 
+ * Подписывается на канал используя его username.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param username - Username канала (без @)
+ * @returns Promise<RpcResponse> - Ответ от сервера с информацией о канале
+ * 
+ * @example
+ * ```typescript
+ * const channelInfo = await joinChannel(client, 'my_channel');
+ * console.log('Подписались на канал:', channelInfo.payload);
+ * ```
  */
 export async function joinChannel(
     client: MaxClient, 
@@ -43,7 +79,19 @@ export async function joinChannel(
 }
 
 /**
- * Create channel
+ * Создание нового канала
+ * 
+ * Создает новый канал с указанным названием.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param channelName - Название канала
+ * @returns Promise<RpcResponse> - Ответ от сервера с информацией о созданном канале
+ * 
+ * @example
+ * ```typescript
+ * const channel = await createChannel(client, 'Мой канал');
+ * console.log('Канал создан:', channel.payload);
+ * ```
  */
 export async function createChannel(
     client: MaxClient, 
@@ -66,7 +114,23 @@ export async function createChannel(
 }
 
 /**
- * Mute or unmute channel
+ * Отключение уведомлений канала
+ * 
+ * Включает или отключает уведомления от канала.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param channelId - ID канала
+ * @param mute - true для отключения уведомлений, false для включения (по умолчанию true)
+ * @returns Promise<RpcResponse> - Ответ от сервера
+ * 
+ * @example
+ * ```typescript
+ * // Отключить уведомления от канала
+ * await muteChannel(client, 'channel123', true);
+ * 
+ * // Включить уведомления от канала
+ * await muteChannel(client, 'channel123', false);
+ * ```
  */
 export async function muteChannel(
     client: MaxClient, 

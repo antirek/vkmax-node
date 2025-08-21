@@ -18,7 +18,19 @@ import type {
 } from './types.js';
 
 /**
- * MaxClient - WebSocket client for VK MAX messenger
+ * MaxClient - WebSocket клиент для VK MAX мессенджера
+ * 
+ * Основной класс для работы с VK MAX API через WebSocket соединение.
+ * Поддерживает аутентификацию через SMS и токены, отправку сообщений,
+ * обработку входящих событий и управление соединением.
+ * 
+ * @example
+ * ```typescript
+ * const client = new MaxClient();
+ * await client.connect();
+ * await client.sendCode('+79001234567');
+ * await client.signIn(token, '1234');
+ * ```
  */
 export class MaxClient extends EventEmitter {
     private _connection: WebSocket | null = null;
@@ -31,7 +43,21 @@ export class MaxClient extends EventEmitter {
     private _isConnected: boolean = false;
 
     /**
-     * Connect to WebSocket server
+     * Подключение к WebSocket серверу VK MAX
+     * 
+     * Устанавливает WebSocket соединение с сервером VK MAX.
+     * Должен быть вызван перед любыми другими операциями.
+     * 
+     * @returns Promise<WebSocket> - Promise с WebSocket соединением
+     * @throws {Error} Если уже подключен
+     * @throws {Error} При ошибке WebSocket соединения
+     * 
+     * @example
+     * ```typescript
+     * const client = new MaxClient();
+     * const connection = await client.connect();
+     * console.log('Подключено к VK MAX');
+     * ```
      */
     async connect(): Promise<WebSocket> {
         if (this._connection) {
@@ -64,7 +90,18 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Disconnect from WebSocket server
+     * Отключение от WebSocket сервера
+     * 
+     * Закрывает WebSocket соединение и останавливает все фоновые задачи.
+     * 
+     * @returns Promise<void>
+     * @throws {Error} Если не подключен
+     * 
+     * @example
+     * ```typescript
+     * await client.disconnect();
+     * console.log('Отключено от сервера');
+     * ```
      */
     async disconnect(): Promise<void> {
         if (!this._connection) {
@@ -80,7 +117,24 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Invoke method on server
+     * Вызов метода на сервере
+     * 
+     * Отправляет RPC запрос на сервер VK MAX и ждет ответа.
+     * Используется внутренне для всех API вызовов.
+     * 
+     * @param opcode - Код операции (см. OPCODES)
+     * @param payload - Данные запроса
+     * @returns Promise<RpcResponse> - Ответ от сервера
+     * @throws {Error} Если не подключен
+     * @throws {Error} При таймауте запроса (30 секунд)
+     * 
+     * @example
+     * ```typescript
+     * const response = await client.invokeMethod(OPCODES.SEND_MESSAGE, {
+     *   chatId: 'chat123',
+     *   message: { text: 'Hello' }
+     * });
+     * ```
      */
     async invokeMethod(opcode: number, payload: any): Promise<RpcResponse> {
         if (!this._connection) {
@@ -114,7 +168,23 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Set callback for incoming events
+     * Установка callback для входящих событий
+     * 
+     * Устанавливает функцию обратного вызова, которая будет вызываться
+     * при получении входящих событий от сервера (сообщения, уведомления и т.д.).
+     * 
+     * @param callback - Функция обратного вызова
+     * @returns Promise<void>
+     * @throws {TypeError} Если callback не является функцией
+     * 
+     * @example
+     * ```typescript
+     * await client.setCallback(async (client, packet) => {
+     *   if (packet.opcode === 128) { // MESSAGE_RECEIVED
+     *     console.log('Получено сообщение:', packet.payload);
+     *   }
+     * });
+     * ```
      */
     async setCallback(callback: IncomingEventCallback): Promise<void> {
         if (typeof callback !== 'function') {
@@ -124,7 +194,12 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Start receiving loop
+     * Запуск цикла приема сообщений
+     * 
+     * Настраивает обработчик входящих WebSocket сообщений.
+     * Вызывается автоматически при подключении.
+     * 
+     * @private
      */
     private _startRecvLoop(): void {
         if (!this._connection) {
@@ -156,7 +231,13 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Send keepalive packet
+     * Отправка keepalive пакета
+     * 
+     * Отправляет пинг-пакет для поддержания соединения активным.
+     * 
+     * @private
+     * @returns Promise<RpcResponse>
+     * @throws {Error} Если не подключен
      */
     private async _sendKeepalivePacket(): Promise<RpcResponse> {
         if (!this._connection) {
@@ -168,7 +249,13 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Start keepalive loop
+     * Запуск задачи keepalive
+     * 
+     * Запускает периодическую отправку keepalive пакетов каждые 30 секунд.
+     * 
+     * @private
+     * @returns Promise<void>
+     * @throws {Error} Если задача уже запущена
      */
     private async _startKeepaliveTask(): Promise<void> {
         if (this._keepaliveTask) {
@@ -186,7 +273,12 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Stop keepalive task
+     * Остановка задачи keepalive
+     * 
+     * Останавливает периодическую отправку keepalive пакетов.
+     * 
+     * @private
+     * @returns Promise<void>
      */
     private async _stopKeepaliveTask(): Promise<void> {
         if (this._keepaliveTask) {
@@ -197,7 +289,18 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Send hello packet
+     * Отправка hello пакета
+     * 
+     * Отправляет приветственный пакет на сервер с информацией об устройстве.
+     * Требуется перед аутентификацией.
+     * 
+     * @returns Promise<RpcResponse>
+     * 
+     * @example
+     * ```typescript
+     * await client._sendHelloPacket();
+     * console.log('Hello пакет отправлен');
+     * ```
      */
     async _sendHelloPacket(): Promise<RpcResponse> {
         const payload: HelloPayload = {
@@ -208,7 +311,21 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Send SMS code to phone number
+     * Отправка SMS кода на номер телефона
+     * 
+     * Инициирует процесс аутентификации через SMS.
+     * Сначала отправляет hello пакет, затем запрашивает SMS код.
+     * 
+     * @param phone - Номер телефона в международном формате
+     * @returns Promise<string> - Токен для подтверждения SMS кода
+     * @throws {Error} Если не подключен
+     * @throws {Error} При ошибке сервера
+     * 
+     * @example
+     * ```typescript
+     * const token = await client.sendCode('+79001234567');
+     * console.log('SMS код отправлен, токен:', token);
+     * ```
      */
     async sendCode(phone: string): Promise<string> {
         if (!this._connection) {
@@ -226,7 +343,24 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Sign in with SMS code
+     * Вход в систему по SMS коду
+     * 
+     * Подтверждает SMS код и выполняет вход в систему.
+     * После успешного входа запускает keepalive задачу.
+     * 
+     * @param smsToken - Токен, полученный от sendCode()
+     * @param smsCode - SMS код, полученный на телефон
+     * @returns Promise<RpcResponse> - Данные аккаунта
+     * @throws {Error} Если не подключен
+     * @throws {Error} При неверном SMS коде
+     * @throws {Error} При ошибке сервера
+     * 
+     * @example
+     * ```typescript
+     * const token = await client.sendCode('+79001234567');
+     * const accountData = await client.signIn(token, '1234');
+     * console.log('Успешно вошли в систему');
+     * ```
      */
     async signIn(smsToken: string, smsCode: string | number): Promise<RpcResponse> {
         if (!this._connection) {
@@ -256,7 +390,22 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Login by token
+     * Вход в систему по сохраненному токену
+     * 
+     * Выполняет вход в систему используя ранее сохраненный токен.
+     * Позволяет избежать повторной SMS аутентификации.
+     * 
+     * @param token - Сохраненный токен входа
+     * @returns Promise<RpcResponse> - Данные аккаунта
+     * @throws {Error} Если не подключен
+     * @throws {Error} При недействительном токене
+     * @throws {Error} При ошибке сервера
+     * 
+     * @example
+     * ```typescript
+     * await client.loginByToken('saved_token_here');
+     * console.log('Успешно вошли по токену');
+     * ```
      */
     async loginByToken(token: string): Promise<RpcResponse> {
         if (!this._connection) {
@@ -293,14 +442,32 @@ export class MaxClient extends EventEmitter {
     }
 
     /**
-     * Check if client is logged in
+     * Проверка статуса входа в систему
+     * 
+     * @returns {boolean} true если пользователь вошел в систему
+     * 
+     * @example
+     * ```typescript
+     * if (client.isLoggedIn) {
+     *   console.log('Пользователь вошел в систему');
+     * }
+     * ```
      */
     get isLoggedIn(): boolean {
         return this._isLoggedIn;
     }
 
     /**
-     * Check if client is connected
+     * Проверка статуса подключения
+     * 
+     * @returns {boolean} true если подключен к серверу
+     * 
+     * @example
+     * ```typescript
+     * if (client.isConnected) {
+     *   console.log('Подключен к серверу');
+     * }
+     * ```
      */
     get isConnected(): boolean {
         return this._isConnected;

@@ -3,11 +3,25 @@ import type { MaxClient } from '../client.js';
 import type { RpcResponse, SendMessagePayload, EditMessagePayload, DeleteMessagePayload, ReadMessagePayload, GetMessagesPayload } from '../types.js';
 
 /**
- * Message functions for VK MAX client
+ * Функции для работы с сообщениями в VK MAX
  */
 
 /**
- * Send message to specified chat
+ * Отправка сообщения в указанный чат
+ * 
+ * Отправляет текстовое сообщение в чат. Поддерживает уведомления.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param chatId - ID чата для отправки сообщения
+ * @param text - Текст сообщения
+ * @param notify - Отправлять ли уведомление (по умолчанию true)
+ * @returns Promise<RpcResponse> - Ответ от сервера
+ * 
+ * @example
+ * ```typescript
+ * await sendMessage(client, 'chat123', 'Привет, мир!');
+ * await sendMessage(client, 'chat123', 'Тихий привет', false);
+ * ```
  */
 export async function sendMessage(
     client: MaxClient, 
@@ -29,7 +43,20 @@ export async function sendMessage(
 }
 
 /**
- * Edit the specified message
+ * Редактирование указанного сообщения
+ * 
+ * Изменяет текст существующего сообщения в чате.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param chatId - ID чата с сообщением
+ * @param messageId - ID сообщения для редактирования
+ * @param text - Новый текст сообщения
+ * @returns Promise<RpcResponse> - Ответ от сервера
+ * 
+ * @example
+ * ```typescript
+ * await editMessage(client, 'chat123', 'msg456', 'Исправленный текст');
+ * ```
  */
 export async function editMessage(
     client: MaxClient, 
@@ -48,7 +75,24 @@ export async function editMessage(
 }
 
 /**
- * Delete the specified message
+ * Удаление указанных сообщений
+ * 
+ * Удаляет одно или несколько сообщений из чата.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param chatId - ID чата с сообщениями
+ * @param messageIds - Массив ID сообщений для удаления
+ * @param deleteForMe - Удалить только для себя (по умолчанию false)
+ * @returns Promise<RpcResponse> - Ответ от сервера
+ * 
+ * @example
+ * ```typescript
+ * // Удалить сообщение для всех
+ * await deleteMessage(client, 'chat123', ['msg456']);
+ * 
+ * // Удалить сообщение только для себя
+ * await deleteMessage(client, 'chat123', ['msg456'], true);
+ * ```
  */
 export async function deleteMessage(
     client: MaxClient, 
@@ -65,7 +109,19 @@ export async function deleteMessage(
 }
 
 /**
- * Read message
+ * Отметка сообщения как прочитанного
+ * 
+ * Помечает сообщение как прочитанное в указанном чате.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param chatId - ID чата с сообщением
+ * @param messageId - ID сообщения для отметки как прочитанного
+ * @returns Promise<RpcResponse> - Ответ от сервера
+ * 
+ * @example
+ * ```typescript
+ * await readMessage(client, 'chat123', 'msg456');
+ * ```
  */
 export async function readMessage(
     client: MaxClient, 
@@ -82,7 +138,25 @@ export async function readMessage(
 }
 
 /**
- * Get messages from chat
+ * Получение сообщений из чата
+ * 
+ * Загружает сообщения из указанного чата с поддержкой пагинации.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param chatId - ID чата для получения сообщений
+ * @param from - ID сообщения для начала загрузки (опционально)
+ * @param forward - Количество сообщений вперед (по умолчанию 0)
+ * @param backward - Количество сообщений назад (по умолчанию 30)
+ * @returns Promise<RpcResponse> - Ответ от сервера с сообщениями
+ * 
+ * @example
+ * ```typescript
+ * // Получить последние 30 сообщений
+ * const messages = await getMessages(client, 'chat123');
+ * 
+ * // Получить сообщения с определенной точки
+ * const messages = await getMessages(client, 'chat123', 'msg456', 0, 50);
+ * ```
  */
 export async function getMessages(
     client: MaxClient, 
@@ -102,7 +176,21 @@ export async function getMessages(
 }
 
 /**
- * Reply to message in the chat
+ * Ответ на сообщение в чате
+ * 
+ * Отправляет сообщение с привязкой к другому сообщению (reply).
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param chatId - ID чата для отправки ответа
+ * @param text - Текст ответного сообщения
+ * @param replyToMessageId - ID сообщения, на которое отвечаем
+ * @param notify - Отправлять ли уведомление (по умолчанию true)
+ * @returns Promise<RpcResponse> - Ответ от сервера
+ * 
+ * @example
+ * ```typescript
+ * await replyMessage(client, 'chat123', 'Это ответ!', 'msg456');
+ * ```
  */
 export async function replyMessage(
     client: MaxClient, 

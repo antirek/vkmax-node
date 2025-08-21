@@ -3,11 +3,23 @@ import type { MaxClient } from '../client.js';
 import type { RpcResponse } from '../types.js';
 
 /**
- * User functions for VK MAX client
+ * Функции для работы с пользователями в VK MAX
  */
 
 /**
- * Get contacts
+ * Получение информации о контактах
+ * 
+ * Загружает информацию о пользователях по их ID.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param contactIds - Массив ID пользователей для получения информации
+ * @returns Promise<RpcResponse> - Ответ от сервера с информацией о контактах
+ * 
+ * @example
+ * ```typescript
+ * const contacts = await getContacts(client, ['user123', 'user456']);
+ * console.log('Информация о контактах:', contacts.payload);
+ * ```
  */
 export async function getContacts(
     client: MaxClient, 
@@ -19,7 +31,19 @@ export async function getContacts(
 }
 
 /**
- * Add contact
+ * Добавление пользователя в контакты
+ * 
+ * Добавляет пользователя в список контактов.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param contactId - ID пользователя для добавления в контакты
+ * @returns Promise<RpcResponse> - Ответ от сервера
+ * 
+ * @example
+ * ```typescript
+ * await addContact(client, 'user123');
+ * console.log('Пользователь добавлен в контакты');
+ * ```
  */
 export async function addContact(
     client: MaxClient, 
@@ -32,7 +56,24 @@ export async function addContact(
 }
 
 /**
- * React to message
+ * Реакция на сообщение
+ * 
+ * Добавляет эмодзи-реакцию к сообщению и получает список всех реакций.
+ * 
+ * @param client - Экземпляр MaxClient
+ * @param chatId - ID чата с сообщением
+ * @param messageId - ID сообщения для добавления реакции
+ * @param reaction - Эмодзи-реакция (например, "👍", "❤️", "😂")
+ * @returns Promise<void>
+ * 
+ * @example
+ * ```typescript
+ * // Добавить лайк к сообщению
+ * await reactToMessage(client, 'chat123', 'msg456', '👍');
+ * 
+ * // Добавить сердечко
+ * await reactToMessage(client, 'chat123', 'msg456', '❤️');
+ * ```
  */
 export async function reactToMessage(
     client: MaxClient, 
