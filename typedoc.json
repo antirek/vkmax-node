@@ -1,0 +1,54 @@
+{
+  "entryPoints": [
+    "src/index.ts"
+  ],
+  "out": "docs",
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/examples/**"
+  ],
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": false,
+  "includeVersion": true,
+  "theme": "default",
+  "name": "VK MAX Node.js Client",
+  "readme": "README.md",
+  "defaultCategory": "API",
+  "categoryOrder": [
+    "API",
+    "Authentication",
+    "Messages",
+    "Profile",
+    "Users",
+    "Groups",
+    "Channels",
+    "Utilities",
+    "Types"
+  ],
+  "categorizeByGroup": true,
+  "groupOrder": [
+    "Classes",
+    "Functions",
+    "Interfaces",
+    "Types",
+    "Variables"
+  ],
+  "sort": [
+    "source-order"
+  ],
+  "searchInComments": true,
+  "validation": {
+    "invalidLink": true,
+    "notExported": true
+  },
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "sourceLinkTemplate": "https://github.com/your-repo/vkmax-node/blob/{gitRevision}/{path}#L{line}",
+  "hideGenerator": false,
+  "sidebarLinks": {
+    "GitHub": "https://github.com/your-repo/vkmax-node",
+    "NPM": "https://www.npmjs.com/package/vkmax-node"
+  }
+} 

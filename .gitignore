@@ -96,4 +96,7 @@ pids
 
 # VK MAX specific
 login_token.txt
-*.token 
+*.token
+
+# Documentation
+docs/ 
