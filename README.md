@@ -123,46 +123,31 @@ async function handleMessages() {
 }
 ```
 
-### Работа с медиафайлами
+### Загрузка и отправка фотографий
 
 ```typescript
-import { 
-    MaxClient, 
-    createMediaFileFromPath, 
-    sendMediaMessage 
-} from 'vkmax-node';
+import fs from 'fs/promises';
+import { MaxClient } from 'vkmax-node';
 
-async function uploadAndSendMedia() {
+async function sendPhoto() {
     const client = new MaxClient();
     
-    // Подключение и аутентификация...
+    // Подключение и авторизация
     await client.connect();
     await client.loginByToken('your_token');
     
-    // Создание медиафайла из файла на диске
-    const mediaFile = await createMediaFileFromPath('/path/to/image.jpg');
+    // Читаем файл фото
+    const photoData = await fs.readFile('/path/to/photo.jpg');
     
-    console.log('Медиафайл:', {
-        type: mediaFile.type,        // 'image'
-        filename: mediaFile.filename, // 'image.jpg'
-        size: mediaFile.size,        // размер в байтах
-        mimeType: mediaFile.mimeType  // 'image/jpeg'
-    });
-    
-    // Отправка медиафайла в чат
-    // Примечание: параметры uploadParams нужно получить от сервера
-    const uploadParams = {
-        apiToken: 'your_api_token',
-        photoIds: 'your_photo_ids'
-    };
-    
-    await sendMediaMessage(
-        client, 
-        'chat_id', 
-        mediaFile, 
-        'Вот моя фотография!',
-        uploadParams
+    // Загружаем и отправляем фото одним методом
+    const response = await client.uploadAndSendPhoto(
+        60815114,           // ID чата (number)
+        photoData,          // Данные файла (Buffer)
+        'photo.jpg',        // Имя файла
+        'Красивое фото!'    // Текст сообщения
     );
+    
+    console.log('Фото отправлено:', response.payload?.message?.id);
 }
 ```
 
@@ -179,6 +164,7 @@ async function uploadAndSendMedia() {
 - `sendCode(phone: string)` - Отправка SMS кода на номер телефона
 - `signIn(smsToken: string, smsCode: string | number)` - Вход по SMS коду
 - `loginByToken(token: string)` - Вход по сохраненному токену
+- `uploadAndSendPhoto(chatId: number, photoData: Buffer, filename: string, text?: string)` - Загрузка и отправка фото
 - `setCallback(callback: IncomingEventCallback)` - Установка callback для входящих событий
 
 #### Свойства
@@ -230,12 +216,7 @@ async function uploadAndSendMedia() {
 
 ### Функции медиафайлов
 
-- `uploadImage(client, mediaFile, apiToken, photoIds)` - Загрузка изображения
-- `uploadFile(client, mediaFile, sig, expires, clientType, id, userId)` - Загрузка файла
-- `uploadMedia(client, mediaFile, uploadParams)` - Автоматическая загрузка медиафайла
-- `sendMediaMessage(client, chatId, mediaFile, text?, uploadParams, notify?)` - Отправка сообщения с медиафайлом
-- `createMediaFileFromPath(filePath)` - Создание MediaFile из файла на диске
-- `createMediaFileFromBuffer(data, filename, mimeType)` - Создание MediaFile из Buffer
+- `client.uploadAndSendPhoto(chatId, photoData, filename, text?)` - Загрузка и отправка фото (встроенный метод)
 
 ## Примеры
 
@@ -255,17 +236,16 @@ npm run example
 - `.info` - показывает статус бота
 - `.weather <город>` - показывает погоду в указанном городе
 
-### Media Upload Example
+### Photo Upload Example
 
 ```bash
-npm run example:media
+npm run example:photo
 ```
 
-Этот пример демонстрирует работу с медиафайлами:
-- Загрузка изображений (JPEG, PNG, GIF, WebP и др.)
-- Загрузка документов (PDF, DOC, TXT и др.)
-- Загрузка видео и аудио файлов
-- Создание MediaFile из файлов на диске или из Buffer
+Этот пример демонстрирует загрузку и отправку фотографий:
+- Простой API - один метод `uploadAndSendPhoto()`
+- Автоматическая загрузка файла на сервер VK MAX
+- Отправка сообщения с фото вложением
 
 ## Типы TypeScript
 
