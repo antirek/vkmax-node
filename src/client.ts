@@ -217,6 +217,12 @@ export class MaxClient extends EventEmitter {
                     console.log(`<- RESPONSE: ${JSON.stringify(packet)}`);
                     pending.resolve(packet);
                 } else {
+                    // Логируем входящие события (не ответы на наши запросы)
+                    console.log(`<- EVENT: ${JSON.stringify(packet)}`);
+                    
+                    // Эмитируем событие для подписчиков
+                    this.emit('message', packet);
+                    
                     if (this._incomingEventCallback) {
                         // Run callback asynchronously
                         setImmediate(() => {

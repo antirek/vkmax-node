@@ -60,11 +60,11 @@ async function main() {
         const fileAttach = response.payload?.message?.attaches?.[0];
         if (fileAttach && fileAttach._type === 'FILE') {
             console.log('📋 Детали файла:', { 
-                type: fileAttach.type, 
+                _type: fileAttach._type, 
                 fileId: fileAttach.fileId, 
-                filename: fileAttach.filename,
+                name: fileAttach.name,
                 size: fileAttach.size,
-                mimeType: fileAttach.mimeType
+                token: fileAttach.token ? `${fileAttach.token.substring(0, 20)}...` : undefined
             });
         }
         
