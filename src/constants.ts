@@ -75,8 +75,10 @@ export const OPCODES = {
     GET_REACTIONS: 181,
     
     // File upload
-    /** Запрос URL для загрузки файла */
-    REQUEST_UPLOAD_URL: 80, // Opcode для запроса ссылки загрузки
+    /** Запрос URL для загрузки изображений */
+    REQUEST_UPLOAD_URL: 80, // Opcode для запроса ссылки загрузки изображений
+    /** Запрос URL для загрузки видео */
+    REQUEST_VIDEO_UPLOAD_URL: 82, // Opcode для запроса ссылки загрузки видео
     
     // Events
     /** Получение нового сообщения */

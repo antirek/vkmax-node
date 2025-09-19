@@ -583,4 +583,112 @@ export class MaxClient extends EventEmitter {
             throw new Error(`Ошибка загрузки и отправки фото: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
+
+    /**
+     * Загружает и отправляет видео одним методом
+     * 
+     * Выполняет полный цикл загрузки видео на сервер VK MAX и отправки его в чат:
+     * 1. Запрашивает URL для загрузки через WebSocket (opcode 80)
+     * 2. Загружает видео файл через HTTP POST запрос
+     * 3. Отправляет сообщение с видео вложением
+     * 
+     * @param chatId - ID чата для отправки
+     * @param videoData - Данные видео в виде Buffer
+     * @param filename - Имя файла (для определения MIME типа)
+     * @param text - Текст сообщения (опционально)
+     * @returns Promise<RpcResponse> - Ответ сервера с информацией об отправленном сообщении
+     * @throws {Error} Если не подключен или не авторизован
+     * 
+     * @example
+     * ```typescript
+     * import fs from 'fs/promises';
+     * 
+     * const videoData = await fs.readFile('video.mp4');
+     * const response = await client.uploadAndSendVideo(
+     *   60815114, 
+     *   videoData, 
+     *   'video.mp4', 
+     *   'Крутое видео!'
+     * );
+     * console.log('Видео отправлено:', response.payload?.message?.id);
+     * ```
+     */
+    async uploadAndSendVideo(
+        chatId: number,
+        videoData: Buffer,
+        filename: string,
+        text: string = ''
+    ): Promise<RpcResponse> {
+        if (!this.isConnected) {
+            throw new Error("WebSocket not connected. Call .connect() first.");
+        }
+        
+        if (!this.isLoggedIn) {
+            throw new Error("Not logged in. Call .loginByToken() or .signIn() first.");
+        }
+
+        try {
+            // Шаг 1: Запрашиваем URL для загрузки (opcode 82 для видео)
+            const uploadUrlResponse = await this.invokeMethod(OPCODES.REQUEST_VIDEO_UPLOAD_URL, { count: 1 });
+            
+            if (!uploadUrlResponse.payload?.info?.[0]?.url) {
+                throw new Error('Не удалось получить URL для загрузки');
+            }
+            
+            const uploadInfo = uploadUrlResponse.payload.info[0];
+            const uploadUrl = uploadInfo.url;
+            const videoId = uploadInfo.videoId;
+            const videoToken = uploadInfo.token;
+            
+            // Шаг 2: Загружаем файл через HTTP
+            // Определяем MIME тип по расширению файла
+            const ext = filename.toLowerCase().split('.').pop();
+            const mimeType = ext === 'mp4' ? 'video/mp4' :
+                           ext === 'avi' ? 'video/avi' :
+                           ext === 'mov' ? 'video/quicktime' :
+                           ext === 'webm' ? 'video/webm' :
+                           'video/mp4'; // по умолчанию MP4
+            
+            const blob = new Blob([videoData as any], { type: mimeType });
+            const formData = new FormData();
+            formData.append('file', blob, filename);
+            
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!uploadResponse.ok) {
+                throw new Error(`HTTP ошибка загрузки: ${uploadResponse.status} ${uploadResponse.statusText}`);
+            }
+            
+            const uploadResponseText = await uploadResponse.text();
+            
+            // Проверяем успешность загрузки (видео сервер возвращает XML)
+            if (!uploadResponseText.includes('<retval>1</retval>')) {
+                throw new Error(`Ошибка загрузки видео на сервер: ${uploadResponseText}`);
+            }
+            
+            // Шаг 3: Отправляем сообщение с видео (используем данные из opcode 82)
+            const messagePayload = {
+                chatId: chatId,
+                message: {
+                    text: text,
+                    cid: generateRandomId(),
+                    elements: [],
+                    attaches: [{
+                        token: videoToken,
+                        videoId,
+                        _type: "VIDEO"
+                    }]
+                },
+                notify: true
+            };
+            
+            return await this.invokeMethod(OPCODES.SEND_MESSAGE, messagePayload);
+            
+        } catch (error) {
+            throw new Error(`Ошибка загрузки и отправки видео: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
 } 
