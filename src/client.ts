@@ -527,7 +527,14 @@ export class MaxClient extends EventEmitter {
             const uploadUrl = uploadUrlResponse.payload.url;
             
             // Шаг 2: Загружаем файл через HTTP
-            const blob = new Blob([photoData as any], { type: 'image/jpeg' });
+            // Определяем MIME тип по расширению файла
+            const ext = filename.toLowerCase().split('.').pop();
+            const mimeType = ext === 'png' ? 'image/png' : 
+                           ext === 'gif' ? 'image/gif' :
+                           ext === 'webp' ? 'image/webp' :
+                           'image/jpeg'; // по умолчанию JPEG
+            
+            const blob = new Blob([photoData as any], { type: mimeType });
             const formData = new FormData();
             formData.append('file', blob, filename);
             
