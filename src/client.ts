@@ -503,7 +503,7 @@ export class MaxClient extends EventEmitter {
      * ```
      */
     async uploadAndSendPhoto(
-        chatId: string | number,
+        chatId: number,
         photoData: Buffer,
         filename: string,
         text: string = ''
@@ -552,7 +552,7 @@ export class MaxClient extends EventEmitter {
             
             // Шаг 3: Отправляем сообщение с фото
             const messagePayload = {
-                chatId: typeof chatId === 'string' ? parseInt(chatId) : chatId,
+                chatId: chatId,
                 message: {
                     text: text,
                     cid: generateRandomId(),
