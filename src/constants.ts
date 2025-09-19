@@ -77,12 +77,18 @@ export const OPCODES = {
     // File upload
     /** Запрос URL для загрузки изображений */
     REQUEST_UPLOAD_URL: 80, // Opcode для запроса ссылки загрузки изображений
+    /** Запрос URL для загрузки файлов */
+    REQUEST_FILE_UPLOAD_URL: 87, // Opcode для запроса ссылки загрузки файлов
+    /** Уведомление о загрузке файла */
+    FILE_UPLOAD_NOTIFICATION: 65, // Opcode для уведомления о загрузке файла
     /** Запрос URL для загрузки видео */
     REQUEST_VIDEO_UPLOAD_URL: 82, // Opcode для запроса ссылки загрузки видео
     
     // Events
     /** Получение нового сообщения */
-    MESSAGE_RECEIVED: 128
+    MESSAGE_RECEIVED: 128,
+    /** Уведомление о готовности файла */
+    FILE_READY_NOTIFICATION: 136
 } as const;
 
 // User agent configuration

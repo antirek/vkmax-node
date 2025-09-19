@@ -691,4 +691,143 @@ export class MaxClient extends EventEmitter {
             throw new Error(`Ошибка загрузки и отправки видео: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
+
+    /**
+     * Загружает и отправляет файл одним методом
+     * 
+     * Выполняет полный цикл загрузки файла на сервер VK MAX и отправки его в чат:
+     * 1. Запрашивает URL для загрузки через WebSocket (opcode 87)
+     * 2. Загружает файл через HTTP POST запрос
+     * 3. Уведомляет сервер о загрузке файла (opcode 65)
+     * 4. Ожидает подтверждения готовности файла (opcode 136)
+     * 5. Отправляет сообщение с файлом вложением
+     * 
+     * @param chatId - ID чата для отправки
+     * @param fileData - Данные файла в виде Buffer
+     * @param filename - Имя файла (для определения MIME типа)
+     * @param text - Текст сообщения (опционально)
+     * @returns Promise<RpcResponse> - Ответ сервера с информацией об отправленном сообщении
+     * @throws {Error} Если не подключен или не авторизован
+     * 
+     * @example
+     * ```typescript
+     * import fs from 'fs/promises';
+     * 
+     * const fileData = await fs.readFile('document.pdf');
+     * const response = await client.uploadAndSendFile(
+     *   60815114, 
+     *   fileData, 
+     *   'document.pdf', 
+     *   'Важный документ!'
+     * );
+     * console.log('Файл отправлен:', response.payload?.message?.id);
+     * ```
+     */
+    async uploadAndSendFile(
+        chatId: number,
+        fileData: Buffer,
+        filename: string
+    ): Promise<RpcResponse> {
+        if (!this.isConnected) {
+            throw new Error("WebSocket not connected. Call .connect() first.");
+        }
+        
+        if (!this.isLoggedIn) {
+            throw new Error("Not logged in. Call .loginByToken() or .signIn() first.");
+        }
+
+        try {
+            // Шаг 1: Запрашиваем URL для загрузки (opcode 87 для файлов)
+            const uploadUrlResponse = await this.invokeMethod(OPCODES.REQUEST_FILE_UPLOAD_URL, { count: 1 });
+            
+            if (!uploadUrlResponse.payload?.info?.[0]?.url) {
+                throw new Error('Не удалось получить URL для загрузки');
+            }
+            
+            const uploadInfo = uploadUrlResponse.payload.info[0];
+            const uploadUrl = uploadInfo.url;
+            const fileId = uploadInfo.fileId;
+            
+            // Шаг 2: Загружаем файл через HTTP
+            // Определяем MIME тип по расширению файла
+            const ext = filename.toLowerCase().split('.').pop();
+            const mimeType = ext === 'pdf' ? 'application/pdf' :
+                           ext === 'doc' ? 'application/msword' :
+                           ext === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+                           ext === 'txt' ? 'text/plain' :
+                           ext === 'zip' ? 'application/zip' :
+                           'application/octet-stream'; // по умолчанию
+            
+            const blob = new Blob([fileData as any], { type: mimeType });
+            const formData = new FormData();
+            formData.append('file', blob, filename);
+            
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!uploadResponse.ok) {
+                throw new Error(`HTTP ошибка загрузки: ${uploadResponse.status} ${uploadResponse.statusText}`);
+            }
+            
+            const uploadResponseText = await uploadResponse.text();
+            console.log('Ответ файлового сервера:', uploadResponseText);
+            
+            // Шаг 3: Уведомляем сервер о загрузке файла (opcode 65)
+            console.log('📤 Уведомляем сервер о загрузке файла...');
+            const notificationPayload = {
+                chatId: chatId,
+                type: 'FILE'
+            };
+            const notificationResponse = await this.invokeMethod(OPCODES.FILE_UPLOAD_NOTIFICATION, notificationPayload);
+            console.log('✅ Уведомление отправлено:', notificationResponse.payload);
+            
+            // Шаг 4: Ожидаем подтверждения готовности файла (opcode 136)
+            console.log('⏳ Ожидаем подтверждения готовности файла...');
+            
+            // Создаем Promise для ожидания события готовности файла
+            const fileReadyPromise = new Promise<number>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Таймаут ожидания готовности файла'));
+                }, 30000); // 30 секунд таймаут
+                
+                const handler = (message: any) => {
+                    if (message.opcode === OPCODES.FILE_READY_NOTIFICATION && 
+                        message.payload?.fileId === fileId) {
+                        clearTimeout(timeout);
+                        this.removeListener('message', handler);
+                        console.log('✅ Файл готов к отправке! FileId:', message.payload.fileId);
+                        resolve(message.payload.fileId);
+                    }
+                };
+                
+                this.on('message', handler);
+            });
+            
+            try {
+                await fileReadyPromise;
+            } catch (error) {
+                console.log('⚠️ Не дождались подтверждения готовности файла, продолжаем отправку...');
+            }
+            
+            // Шаг 5: Отправляем сообщение с файлом (используем точную структуру из браузера)
+            const messagePayload = {
+                chatId: chatId,
+                message: {
+                    cid: generateRandomId(),
+                    attaches: [{
+                        _type: 'FILE',
+                        fileId: fileId
+                    }]
+                },
+                notify: true
+            };
+            
+            return await this.invokeMethod(OPCODES.SEND_MESSAGE, messagePayload);
+            
+        } catch (error) {
+            throw new Error(`Ошибка загрузки и отправки файла: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
 } 

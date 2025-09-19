@@ -12,6 +12,7 @@
     "example:simple": "node dist/examples/simple-example.js",
     "example:photo": "node dist/examples/simple-photo-upload.js",
     "example:video": "node dist/examples/simple-video-upload.js",
+    "example:file": "node dist/examples/simple-file-upload.js",
     "docs": "typedoc",
     "docs:serve": "typedoc --watch"
   },
