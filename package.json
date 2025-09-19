@@ -25,6 +25,7 @@
     "send:real": "node dist/examples/send-real-photo-attachment.js",
     "send:working": "node dist/examples/send-working-photo.js",
     "example:upload": "node dist/examples/upload-photo-step-by-step.js",
+    "example:simple-photo": "node dist/examples/simple-photo-upload.js",
     "docs": "typedoc",
     "docs:serve": "typedoc --watch"
   },

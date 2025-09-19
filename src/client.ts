@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 import { EventEmitter } from 'events';
-import { WS_HOST, RPC_VERSION, USER_AGENT, OPCODES } from './constants.js';
+import { WS_HOST, RPC_VERSION, USER_AGENT, OPCODES, generateRandomId } from './constants.js';
 import type {
     RpcRequest,
     RpcResponse,
@@ -471,5 +471,109 @@ export class MaxClient extends EventEmitter {
      */
     get isConnected(): boolean {
         return this._isConnected;
+    }
+
+    /**
+     * Загрузка и отправка фото в чат
+     * 
+     * Выполняет полный процесс загрузки фото:
+     * 1. Запрашивает URL для загрузки через WebSocket (opcode 80)
+     * 2. Загружает файл на сервер через HTTP
+     * 3. Отправляет сообщение с PHOTO вложением
+     * 
+     * @param chatId - ID чата для отправки
+     * @param photoData - Данные фото (Buffer)
+     * @param filename - Имя файла
+     * @param text - Текст сообщения (опционально)
+     * @returns Promise<RpcResponse> - Ответ сервера с отправленным сообщением
+     * @throws {Error} Если не подключен или не авторизован
+     * 
+     * @example
+     * ```typescript
+     * import fs from 'fs/promises';
+     * 
+     * const photoData = await fs.readFile('photo.jpg');
+     * const response = await client.uploadAndSendPhoto(
+     *   60815114, 
+     *   photoData, 
+     *   'photo.jpg', 
+     *   'Красивое фото!'
+     * );
+     * console.log('Фото отправлено:', response.payload?.message?.id);
+     * ```
+     */
+    async uploadAndSendPhoto(
+        chatId: string | number,
+        photoData: Buffer,
+        filename: string,
+        text: string = ''
+    ): Promise<RpcResponse> {
+        if (!this.isConnected) {
+            throw new Error("WebSocket not connected. Call .connect() first.");
+        }
+        
+        if (!this.isLoggedIn) {
+            throw new Error("Not logged in. Call .loginByToken() or .signIn() first.");
+        }
+
+        try {
+            // Шаг 1: Запрашиваем URL для загрузки (opcode 80)
+            const uploadUrlResponse = await this.invokeMethod(OPCODES.REQUEST_UPLOAD_URL, { count: 1 });
+            
+            if (!uploadUrlResponse.payload?.url) {
+                throw new Error('Не удалось получить URL для загрузки');
+            }
+            
+            const uploadUrl = uploadUrlResponse.payload.url;
+            
+            // Шаг 2: Загружаем файл через HTTP
+            const blob = new Blob([photoData as any], { type: 'image/jpeg' });
+            const formData = new FormData();
+            formData.append('file', blob, filename);
+            
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!uploadResponse.ok) {
+                throw new Error(`HTTP ошибка загрузки: ${uploadResponse.status} ${uploadResponse.statusText}`);
+            }
+            
+            const uploadResult = await uploadResponse.json();
+            
+            // Извлекаем данные фото
+            const photoKey = Object.keys(uploadResult.photos || {})[0];
+            const photoToken = uploadResult.photos?.[photoKey]?.token;
+            
+            if (!photoKey || !photoToken) {
+                throw new Error('Не удалось получить photoKey или photoToken из ответа сервера');
+            }
+            
+            // Шаг 3: Отправляем сообщение с фото
+            const messagePayload = {
+                chatId: typeof chatId === 'string' ? parseInt(chatId) : chatId,
+                message: {
+                    text: text,
+                    cid: generateRandomId(),
+                    elements: [],
+                    attaches: [{
+                        _type: 'PHOTO',
+                        type: 'PHOTO',
+                        photoId: photoKey,
+                        photoToken: photoToken,
+                        width: 300,
+                        height: 200,
+                        baseUrl: `https://i.oneme.ru/i?r=${photoKey}`
+                    }]
+                },
+                notify: true
+            };
+            
+            return await this.invokeMethod(OPCODES.SEND_MESSAGE, messagePayload);
+            
+        } catch (error) {
+            throw new Error(`Ошибка загрузки и отправки фото: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 } 
