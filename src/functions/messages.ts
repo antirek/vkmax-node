@@ -25,12 +25,12 @@ import type { RpcResponse, SendMessagePayload, EditMessagePayload, DeleteMessage
  */
 export async function sendMessage(
     client: MaxClient, 
-    chatId: string, 
+    chatId: string | number, 
     text: string, 
     notify: boolean = true
 ): Promise<RpcResponse> {
     const payload: SendMessagePayload = {
-        chatId: chatId,
+        chatId: typeof chatId === 'string' ? parseInt(chatId) : chatId,
         message: {
             text: text,
             cid: generateRandomId(),

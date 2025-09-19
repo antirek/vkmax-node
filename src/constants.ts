@@ -74,6 +74,10 @@ export const OPCODES = {
     /** Получение реакций на сообщение */
     GET_REACTIONS: 181,
     
+    // File upload
+    /** Запрос URL для загрузки файла */
+    REQUEST_UPLOAD_URL: 80, // Opcode для запроса ссылки загрузки
+    
     // Events
     /** Получение нового сообщения */
     MESSAGE_RECEIVED: 128
@@ -204,4 +208,140 @@ export function validateSmsCode(code: string | number): boolean {
     // SMS code should be 4-6 digits
     const codeRegex = /^\d{4,6}$/;
     return codeRegex.test(String(code));
+}
+
+// Media upload endpoints
+/**
+ * Endpoints для загрузки медиафайлов
+ */
+export const UPLOAD_ENDPOINTS = {
+    /** Endpoint для загрузки изображений */
+    IMAGES: 'https://iu.oneme.ru/uploadImage',
+    /** Endpoint для загрузки файлов */
+    FILES: 'https://fu.oneme.ru/api/upload.do'
+} as const;
+
+// MIME types
+/**
+ * Поддерживаемые MIME типы для разных типов медиафайлов
+ */
+export const MIME_TYPES = {
+    /** MIME типы изображений */
+    IMAGES: [
+        'image/jpeg',
+        'image/jpg', 
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/bmp',
+        'image/tiff'
+    ],
+    /** MIME типы видео */
+    VIDEOS: [
+        'video/mp4',
+        'video/avi',
+        'video/mov',
+        'video/wmv',
+        'video/flv',
+        'video/webm',
+        'video/mkv',
+        'video/3gp'
+    ],
+    /** MIME типы аудио */
+    AUDIO: [
+        'audio/mp3',
+        'audio/wav',
+        'audio/flac',
+        'audio/aac',
+        'audio/ogg',
+        'audio/wma',
+        'audio/m4a'
+    ],
+    /** MIME типы документов */
+    DOCUMENTS: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+        'text/csv',
+        'application/zip',
+        'application/rar',
+        'application/7z'
+    ]
+} as const;
+
+// File size limits
+/**
+ * Ограничения размера файлов (в байтах)
+ */
+export const FILE_SIZE_LIMITS = {
+    /** Максимальный размер изображения (10 МБ) */
+    IMAGE: 10 * 1024 * 1024,
+    /** Максимальный размер видео (100 МБ) */
+    VIDEO: 100 * 1024 * 1024,
+    /** Максимальный размер аудио (50 МБ) */
+    AUDIO: 50 * 1024 * 1024,
+    /** Максимальный размер документа (4 ГБ) */
+    DOCUMENT: 4 * 1024 * 1024 * 1024
+} as const;
+
+/**
+ * Определение типа медиафайла по MIME типу
+ * 
+ * @param mimeType - MIME тип файла
+ * @returns Тип медиафайла или undefined если не поддерживается
+ * 
+ * @example
+ * ```typescript
+ * const type = getMediaTypeFromMime('image/jpeg'); // 'image'
+ * const type = getMediaTypeFromMime('video/mp4'); // 'video'
+ * ```
+ */
+export function getMediaTypeFromMime(mimeType: string): 'image' | 'video' | 'audio' | 'document' | undefined {
+    if (MIME_TYPES.IMAGES.includes(mimeType as any)) {
+        return 'image';
+    }
+    if (MIME_TYPES.VIDEOS.includes(mimeType as any)) {
+        return 'video';
+    }
+    if (MIME_TYPES.AUDIO.includes(mimeType as any)) {
+        return 'audio';
+    }
+    if (MIME_TYPES.DOCUMENTS.includes(mimeType as any)) {
+        return 'document';
+    }
+    return undefined;
+}
+
+/**
+ * Валидация размера файла
+ * 
+ * @param size - Размер файла в байтах
+ * @param mediaType - Тип медиафайла
+ * @returns true если размер допустимый, false в противном случае
+ * 
+ * @example
+ * ```typescript
+ * if (validateFileSize(fileSize, 'image')) {
+ *   console.log('Размер изображения допустимый');
+ * }
+ * ```
+ */
+export function validateFileSize(size: number, mediaType: 'image' | 'video' | 'audio' | 'document'): boolean {
+    switch (mediaType) {
+        case 'image':
+            return size <= FILE_SIZE_LIMITS.IMAGE;
+        case 'video':
+            return size <= FILE_SIZE_LIMITS.VIDEO;
+        case 'audio':
+            return size <= FILE_SIZE_LIMITS.AUDIO;
+        case 'document':
+            return size <= FILE_SIZE_LIMITS.DOCUMENT;
+        default:
+            return false;
+    }
 } 

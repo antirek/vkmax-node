@@ -173,7 +173,7 @@ export interface Message {
  */
 export interface SendMessagePayload {
   /** ID чата */
-  chatId: string;
+  chatId: string | number;
   /** Сообщение для отправки */
   message: Message;
   /** Отправлять ли уведомление */
@@ -423,6 +423,169 @@ export interface ClientState {
   pending: Map<number, PendingRequest>;
   /** Статус подключения */
   isConnected: boolean;
+}
+
+// File upload types
+/**
+ * Интерфейс для загрузки изображений
+ * 
+ * Структура данных для загрузки изображений через uploadImage API.
+ */
+export interface ImageUploadPayload {
+  /** API токен для аутентификации */
+  apiToken: string;
+  /** ID фотографий */
+  photoIds: string;
+  /** Файл изображения */
+  file: Buffer | Uint8Array;
+  /** Имя файла */
+  filename: string;
+  /** MIME тип */
+  mimeType: string;
+}
+
+/**
+ * Интерфейс для загрузки файлов
+ * 
+ * Структура данных для загрузки файлов через upload.do API.
+ */
+export interface FileUploadPayload {
+  /** Подпись для авторизации */
+  sig: string;
+  /** Время истечения */
+  expires: number;
+  /** Тип клиента */
+  clientType: number;
+  /** ID */
+  id: number;
+  /** ID пользователя */
+  userId: number;
+  /** Файл для загрузки */
+  file: Buffer | Uint8Array;
+  /** Имя файла */
+  filename: string;
+  /** MIME тип */
+  mimeType: string;
+}
+
+/**
+ * Интерфейс ответа загрузки изображения
+ */
+export interface ImageUploadResponse {
+  /** Успешность загрузки */
+  success: boolean;
+  /** ID загруженного изображения */
+  imageId?: string;
+  /** URL изображения */
+  url?: string;
+  /** Ошибка (если есть) */
+  error?: string;
+}
+
+/**
+ * Интерфейс ответа загрузки файла
+ */
+export interface FileUploadResponse {
+  /** Успешность загрузки */
+  success: boolean;
+  /** ID загруженного файла */
+  fileId?: string;
+  /** URL файла */
+  url?: string;
+  /** Размер файла */
+  size?: number;
+  /** Ошибка (если есть) */
+  error?: string;
+}
+
+/**
+ * Интерфейс запроса URL для загрузки файла
+ */
+export interface RequestUploadUrlPayload {
+  /** Тип файла */
+  fileType: 'image' | 'video' | 'audio' | 'document';
+  /** Имя файла */
+  filename: string;
+  /** Размер файла в байтах */
+  size: number;
+  /** MIME тип файла */
+  mimeType: string;
+}
+
+/**
+ * Интерфейс ответа с URL для загрузки
+ */
+export interface UploadUrlResponse {
+  /** URL для загрузки файла */
+  uploadUrl: string;
+  /** Параметры для загрузки */
+  uploadParams: {
+    /** API токен (для изображений) */
+    apiToken?: string;
+    /** Photo IDs (для изображений) */
+    photoIds?: string;
+    /** Подпись (для файлов) */
+    sig?: string;
+    /** Время истечения (для файлов) */
+    expires?: number;
+    /** Тип клиента (для файлов) */
+    clientType?: number;
+    /** ID (для файлов) */
+    id?: number;
+    /** ID пользователя (для файлов) */
+    userId?: number;
+  };
+  /** ID файла для последующего использования */
+  fileId?: string;
+  /** Ошибка (если есть) */
+  error?: string;
+}
+
+/**
+ * Тип поддерживаемых медиафайлов
+ */
+export type MediaType = 'image' | 'video' | 'audio' | 'document';
+
+/**
+ * Интерфейс медиафайла
+ */
+export interface MediaFile {
+  /** Тип медиафайла */
+  type: MediaType;
+  /** Содержимое файла */
+  data: Buffer | Uint8Array;
+  /** Имя файла */
+  filename: string;
+  /** MIME тип */
+  mimeType: string;
+  /** Размер файла в байтах */
+  size: number;
+}
+
+/**
+ * Интерфейс вложения медиафайла в сообщение
+ */
+export interface MediaAttachment extends MessageAttachment {
+  /** Тип вложения - всегда MEDIA */
+  _type: 'MEDIA';
+  /** Тип медиафайла */
+  mediaType: MediaType;
+  /** ID загруженного файла */
+  fileId: string;
+  /** URL файла */
+  url: string;
+  /** Имя файла */
+  filename: string;
+  /** Размер файла */
+  size: number;
+  /** Превью (для изображений и видео) */
+  thumbnail?: string;
+  /** Ширина (для изображений и видео) */
+  width?: number;
+  /** Высота (для изображений и видео) */
+  height?: number;
+  /** Длительность (для аудио и видео) */
+  duration?: number;
 }
 
 // Types are already exported above 

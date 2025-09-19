@@ -123,6 +123,49 @@ async function handleMessages() {
 }
 ```
 
+### Работа с медиафайлами
+
+```typescript
+import { 
+    MaxClient, 
+    createMediaFileFromPath, 
+    sendMediaMessage 
+} from 'vkmax-node';
+
+async function uploadAndSendMedia() {
+    const client = new MaxClient();
+    
+    // Подключение и аутентификация...
+    await client.connect();
+    await client.loginByToken('your_token');
+    
+    // Создание медиафайла из файла на диске
+    const mediaFile = await createMediaFileFromPath('/path/to/image.jpg');
+    
+    console.log('Медиафайл:', {
+        type: mediaFile.type,        // 'image'
+        filename: mediaFile.filename, // 'image.jpg'
+        size: mediaFile.size,        // размер в байтах
+        mimeType: mediaFile.mimeType  // 'image/jpeg'
+    });
+    
+    // Отправка медиафайла в чат
+    // Примечание: параметры uploadParams нужно получить от сервера
+    const uploadParams = {
+        apiToken: 'your_api_token',
+        photoIds: 'your_photo_ids'
+    };
+    
+    await sendMediaMessage(
+        client, 
+        'chat_id', 
+        mediaFile, 
+        'Вот моя фотография!',
+        uploadParams
+    );
+}
+```
+
 ## API
 
 ### MaxClient
@@ -185,6 +228,15 @@ async function handleMessages() {
 - `createChannel(client, channelName)` - Создание канала
 - `muteChannel(client, channelId, mute?)` - Отключение уведомлений канала
 
+### Функции медиафайлов
+
+- `uploadImage(client, mediaFile, apiToken, photoIds)` - Загрузка изображения
+- `uploadFile(client, mediaFile, sig, expires, clientType, id, userId)` - Загрузка файла
+- `uploadMedia(client, mediaFile, uploadParams)` - Автоматическая загрузка медиафайла
+- `sendMediaMessage(client, chatId, mediaFile, text?, uploadParams, notify?)` - Отправка сообщения с медиафайлом
+- `createMediaFileFromPath(filePath)` - Создание MediaFile из файла на диске
+- `createMediaFileFromBuffer(data, filename, mimeType)` - Создание MediaFile из Buffer
+
 ## Примеры
 
 ### Простой пример
@@ -203,6 +255,18 @@ npm run example
 - `.info` - показывает статус бота
 - `.weather <город>` - показывает погоду в указанном городе
 
+### Media Upload Example
+
+```bash
+npm run example:media
+```
+
+Этот пример демонстрирует работу с медиафайлами:
+- Загрузка изображений (JPEG, PNG, GIF, WebP и др.)
+- Загрузка документов (PDF, DOC, TXT и др.)
+- Загрузка видео и аудио файлов
+- Создание MediaFile из файлов на диске или из Buffer
+
 ## Типы TypeScript
 
 Проект полностью типизирован с помощью TypeScript. Все функции, классы и интерфейсы имеют строгую типизацию.
@@ -213,6 +277,10 @@ npm run example
 - `RpcRequest` / `RpcResponse` - типы для RPC запросов/ответов
 - `Message` - тип сообщения
 - `IncomingEventCallback` - тип callback для входящих событий
+- `MediaFile` - тип медиафайла
+- `MediaType` - тип медиафайла ('image' | 'video' | 'audio' | 'document')
+- `ImageUploadResponse` / `FileUploadResponse` - типы ответов загрузки
+- `MediaAttachment` - тип медиа-вложения в сообщении
 
 ## Константы
 
@@ -220,6 +288,9 @@ npm run example
 - `PRIVACY_SETTINGS` - настройки приватности
 - `MESSAGE_TYPES` - типы сообщений
 - `USER_AGENT` - конфигурация User-Agent
+- `UPLOAD_ENDPOINTS` - endpoints для загрузки медиафайлов
+- `MIME_TYPES` - поддерживаемые MIME типы
+- `FILE_SIZE_LIMITS` - ограничения размера файлов
 
 ## Требования
 

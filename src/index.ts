@@ -11,6 +11,7 @@ export * from './functions/profile.js';
 export * from './functions/users.js';
 export * from './functions/groups.js';
 export * from './functions/channels.js';
+export * from './functions/media.js';
 
 // Export constants and types
 export * from './constants.js';
