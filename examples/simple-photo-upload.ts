@@ -31,18 +31,18 @@ async function simplePhotoUpload() {
         console.log('✅ Подключение и авторизация выполнены\n');
         
         // Читаем файл фото
-        console.log('📁 Читаем файл test-photo.png...');
-        const photoPath = path.join(__dirname, 'test-photo.png');
+        console.log('📁 Читаем файл test-photo.gif...');
+        const photoPath = path.join(__dirname, 'test-photo.gif');
         const photoData = await fs.readFile(photoPath);
         console.log('✅ Файл прочитан:', `${Math.round(photoData.length / 1024 * 100) / 100} KB\n`);
         
         // Загружаем и отправляем фото одним методом
-        console.log('🚀 Загружаем и отправляем PNG фото одним методом...');
+        console.log('🚀 Загружаем и отправляем GIF фото одним методом...');
         const response = await client.uploadAndSendPhoto(
             VASILIY_CHAT_ID,
             photoData,
-            'test-photo.png',
-            '🖼️ PNG фото отправлено через uploadAndSendPhoto()!'
+            'test-photo.gif',
+            '🎬 Анимированный GIF отправлен через uploadAndSendPhoto()!'
         );
         
         console.log('✅ УСПЕХ! Фото отправлено!');
