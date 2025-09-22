@@ -1,6 +1,43 @@
 # VK MAX Node.js Client (TypeScript)
 
-Node.js клиент для VK MAX мессенджера (OneMe) с полной поддержкой TypeScript.
+Полнофункциональный Node.js клиент для VK MAX мессенджера (OneMe) с полной поддержкой TypeScript и медиафайлов.
+
+## Возможности
+
+✅ **Полная поддержка WebSocket API VK MAX**  
+✅ **Отправка изображений** (JPEG, PNG, GIF, WebP)  
+✅ **Отправка видео** (MP4)  
+✅ **Отправка файлов** (PDF, TXT, DOC и др.)  
+✅ **Авторизация по SMS и токену**  
+✅ **Обработка входящих сообщений**  
+✅ **Управление группами и каналами**  
+✅ **Строгая типизация TypeScript**  
+✅ **Система событий для медиафайлов**
+
+## Быстрый старт
+
+```typescript
+import { MaxClient } from 'vkmax-node';
+import fs from 'fs/promises';
+
+const client = new MaxClient();
+
+// Подключение и авторизация
+await client.connect();
+await client.loginByToken('your_token');
+
+// Отправка изображения
+const photoData = await fs.readFile('photo.jpg');
+await client.uploadAndSendPhoto(chatId, photoData, 'photo.jpg', 'Привет!');
+
+// Отправка видео
+const videoData = await fs.readFile('video.mp4');
+await client.uploadAndSendVideo(chatId, videoData, 'video.mp4', 'Смотри!');
+
+// Отправка файла
+const fileData = await fs.readFile('document.pdf');
+await client.uploadAndSendFile(chatId, fileData, 'document.pdf');
+```
 
 ## Установка
 
@@ -123,7 +160,9 @@ async function handleMessages() {
 }
 ```
 
-### Загрузка и отправка фотографий
+### Загрузка и отправка медиафайлов
+
+#### Изображения (JPEG, PNG, GIF, WebP)
 
 ```typescript
 import fs from 'fs/promises';
@@ -151,6 +190,55 @@ async function sendPhoto() {
 }
 ```
 
+#### Видео (MP4)
+
+```typescript
+async function sendVideo() {
+    const client = new MaxClient();
+    
+    // Подключение и авторизация
+    await client.connect();
+    await client.loginByToken('your_token');
+    
+    // Читаем видео файл
+    const videoData = await fs.readFile('/path/to/video.mp4');
+    
+    // Загружаем и отправляем видео одним методом
+    const response = await client.uploadAndSendVideo(
+        60815114,           // ID чата (number)
+        videoData,          // Данные файла (Buffer)
+        'video.mp4',        // Имя файла
+        'Интересное видео!' // Текст сообщения
+    );
+    
+    console.log('Видео отправлено:', response.payload?.message?.id);
+}
+```
+
+#### Файлы (PDF, TXT, DOC и др.)
+
+```typescript
+async function sendFile() {
+    const client = new MaxClient();
+    
+    // Подключение и авторизация
+    await client.connect();
+    await client.loginByToken('your_token');
+    
+    // Читаем файл
+    const fileData = await fs.readFile('/path/to/document.pdf');
+    
+    // Загружаем и отправляем файл одним методом
+    const response = await client.uploadAndSendFile(
+        60815114,      // ID чата (number)
+        fileData,      // Данные файла (Buffer)
+        'document.pdf' // Имя файла
+    );
+    
+    console.log('Файл отправлен:', response.payload?.message?.id);
+}
+```
+
 ## API
 
 ### MaxClient
@@ -159,13 +247,18 @@ async function sendPhoto() {
 
 #### Методы
 
+##### Подключение и авторизация
 - `connect()` - Подключение к WebSocket серверу
 - `disconnect()` - Отключение от сервера
 - `sendCode(phone: string)` - Отправка SMS кода на номер телефона
 - `signIn(smsToken: string, smsCode: string | number)` - Вход по SMS коду
 - `loginByToken(token: string)` - Вход по сохраненному токену
-- `uploadAndSendPhoto(chatId: number, photoData: Buffer, filename: string, text?: string)` - Загрузка и отправка фото
 - `setCallback(callback: IncomingEventCallback)` - Установка callback для входящих событий
+
+##### Медиафайлы
+- `uploadAndSendPhoto(chatId: number, photoData: Buffer, filename: string, text?: string)` - Загрузка и отправка изображений (JPEG, PNG, GIF, WebP)
+- `uploadAndSendVideo(chatId: number, videoData: Buffer, filename: string, text?: string)` - Загрузка и отправка видео (MP4)
+- `uploadAndSendFile(chatId: number, fileData: Buffer, filename: string)` - Загрузка и отправка файлов (PDF, TXT, DOC и др.)
 
 #### Свойства
 
@@ -216,7 +309,9 @@ async function sendPhoto() {
 
 ### Функции медиафайлов
 
-- `client.uploadAndSendPhoto(chatId, photoData, filename, text?)` - Загрузка и отправка фото (встроенный метод)
+- `client.uploadAndSendPhoto(chatId, photoData, filename, text?)` - Загрузка и отправка изображений (JPEG, PNG, GIF, WebP)
+- `client.uploadAndSendVideo(chatId, videoData, filename, text?)` - Загрузка и отправка видео (MP4)
+- `client.uploadAndSendFile(chatId, fileData, filename)` - Загрузка и отправка файлов (PDF, TXT, DOC и др.)
 
 ## Примеры
 
@@ -236,16 +331,73 @@ npm run example
 - `.info` - показывает статус бота
 - `.weather <город>` - показывает погоду в указанном городе
 
-### Photo Upload Example
+### Примеры медиафайлов
+
+#### Изображения
 
 ```bash
 npm run example:photo
 ```
 
-Этот пример демонстрирует загрузку и отправку фотографий:
-- Простой API - один метод `uploadAndSendPhoto()`
-- Автоматическая загрузка файла на сервер VK MAX
-- Отправка сообщения с фото вложением
+Демонстрирует загрузку и отправку изображений:
+- Поддержка JPEG, PNG, GIF, WebP форматов
+- Автоматическое определение MIME типа по расширению
+- Полный цикл: получение URL → HTTP загрузка → отправка сообщения
+
+#### Видео
+
+```bash
+npm run example:video
+```
+
+Демонстрирует загрузку и отправку видео:
+- Поддержка MP4 формата
+- Автоматическая обработка на сервере
+- Создание превью и оптимизация
+
+#### Файлы
+
+```bash
+npm run example:file
+```
+
+Демонстрирует загрузку и отправку файлов:
+- Поддержка PDF, TXT, DOC и других форматов
+- Автоматическое сканирование на вирусы
+- Ожидание завершения обработки на сервере
+
+## Система событий
+
+Клиент поддерживает подписку на события через EventEmitter:
+
+```typescript
+// Подписка на входящие сообщения
+client.on('message', (packet) => {
+    if (packet.opcode === 128) { // MESSAGE_RECEIVED
+        console.log('Новое сообщение:', packet.payload);
+    }
+});
+```
+
+### Особенности и ограничения
+
+#### Поддерживаемые форматы
+- **Изображения:** JPEG, PNG, GIF, WebP
+- **Видео:** MP4
+- **Файлы:** PDF, TXT, DOC, DOCX и большинство других форматов
+
+#### Размерные ограничения
+- **Изображения:** до 40 МБ
+- **Файлы:** до 4 ГБ
+- **Видео:** ограничения зависят от сервера
+
+#### Особенности обработки
+- **Изображения:** автоматическое сжатие и оптимизация на сервере
+- **Видео:** требуют времени на обработку (конвертация, создание превью)
+- **Файлы:** сканирование на вирусы и индексация
+
+#### Ошибки "attachment.not.ready"
+Это нормальное поведение для видео и файлов - означает, что медиафайл принят сервером и находится в процессе обработки. После завершения обработки файл появится в чате.
 
 ## Типы TypeScript
 
@@ -264,12 +416,11 @@ npm run example:photo
 
 ## Константы
 
-- `OPCODES` - коды операций
+- `OPCODES` - коды операций WebSocket API
 - `PRIVACY_SETTINGS` - настройки приватности
 - `MESSAGE_TYPES` - типы сообщений
 - `USER_AGENT` - конфигурация User-Agent
-- `UPLOAD_ENDPOINTS` - endpoints для загрузки медиафайлов
-- `MIME_TYPES` - поддерживаемые MIME типы
+- `MIME_TYPES` - поддерживаемые MIME типы медиафайлов
 - `FILE_SIZE_LIMITS` - ограничения размера файлов
 
 ## Требования
