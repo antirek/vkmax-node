@@ -67,7 +67,13 @@ export class MaxClient extends EventEmitter {
         console.log(`Connecting to ${WS_HOST}...`);
         
         return new Promise((resolve, reject) => {
-            this._connection = new WebSocket(WS_HOST);
+            this._connection = new WebSocket(WS_HOST, {
+                // rejectUnauthorized: false,
+                origin: 'https://web.max.ru',
+                headers:{
+                    "user-agent": USER_AGENT.headerUserAgent,
+                },
+            });
             
             this._connection.on('open', () => {
                 console.log('Connected. Receive task started.');
