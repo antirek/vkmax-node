@@ -92,6 +92,10 @@ export interface VerificationPayload {
     /** Дополнительные данные профиля */
     [key: string]: any;
   };
+  /** Токен аутентификации (если 2FA не требуется) */
+  tokenAttrs?: any;
+  /** Вызов пароля (если требуется 2FA) */
+  passwordChallenge?: PasswordChallenge;
 }
 
 /**
@@ -586,6 +590,67 @@ export interface MediaAttachment extends MessageAttachment {
   height?: number;
   /** Длительность (для аудио и видео) */
   duration?: number;
+}
+
+/**
+ * Интерфейс конфигурации пароля
+ * 
+ * Содержит требования к паролю для 2FA.
+ */
+export interface PasswordConfig {
+  /** Максимальная длина пароля */
+  passMaxLen: number;
+  /** Минимальная длина пароля */
+  passMinLen: number;
+  /** Максимальная длина подсказки */
+  hintMaxLen: number;
+}
+
+/**
+ * Интерфейс вызова пароля
+ * 
+ * Содержит информацию о запросе пароля для 2FA.
+ */
+export interface PasswordChallenge {
+  /** Конфигурация требований к паролю */
+  config: PasswordConfig;
+  /** Частично замаскированный email пользователя */
+  email: string;
+  /** Подсказка для пароля */
+  hint: string;
+  /** Уникальный идентификатор вызова */
+  trackId: string;
+}
+
+/**
+ * Интерфейс данных подтверждения пароля
+ * 
+ * Структура данных для отправки пароля при 2FA.
+ */
+export interface VerifyPasswordPayload {
+  /** Уникальный идентификатор вызова */
+  trackId: string;
+  /** Пароль для подтверждения */
+  password: string;
+}
+
+/**
+ * Интерфейс ответа подтверждения пароля
+ * 
+ * Содержит результат верификации пароля при 2FA.
+ */
+export interface PasswordVerificationPayload {
+  /** Ошибка верификации (если есть) */
+  error?: string;
+  /** Токен аутентификации */
+  tokenAttrs?: any;
+  /** Информация о профиле пользователя */
+  profile?: {
+    /** Номер телефона */
+    phone: string;
+    /** Дополнительные данные профиля */
+    [key: string]: any;
+  };
 }
 
 // Types are already exported above 

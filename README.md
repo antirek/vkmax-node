@@ -8,7 +8,7 @@
 ✅ **Отправка изображений** (JPEG, PNG, GIF, WebP)  
 ✅ **Отправка видео** (MP4)  
 ✅ **Отправка файлов** (PDF, TXT, DOC и др.)  
-✅ **Авторизация по SMS и токену**  
+✅ **Авторизация по SMS, токену и 2FA**  
 ✅ **Обработка входящих сообщений**  
 ✅ **Управление группами и каналами**  
 ✅ **Строгая типизация TypeScript**  
@@ -134,6 +134,45 @@ async function loginByToken() {
 }
 ```
 
+### Двухфакторная аутентификация (2FA)
+
+```typescript
+import { MaxClient } from 'vkmax-node';
+
+async function stepByStep2FA() {
+    const client = new MaxClient();
+    
+    try {
+        await client.connect();
+        
+        // Шаг 1: Отправляем SMS код
+        const smsToken = await client.sendCode('+79001234567');
+        
+        // Шаг 2: Подтверждаем SMS код
+        const smsResponse = await client.signIn(smsToken, '1234');
+        
+        // Проверяем, требуется ли 2FA
+        if (smsResponse.payload.passwordChallenge) {
+            console.log('Требуется дополнительный пароль:', 
+                       smsResponse.payload.passwordChallenge.hint);
+            
+            // Шаг 3: Подтверждаем пароль для 2FA
+            const finalResponse = await client.verifyPassword(
+                smsResponse.payload.passwordChallenge.trackId,
+                'mypassword'
+            );
+            
+            console.log('Успешно вошли с 2FA!');
+        } else {
+            console.log('Вход без 2FA успешен!');
+        }
+        
+    } catch (error) {
+        console.error('Ошибка входа:', error);
+    }
+}
+```
+
 ### Обработка входящих сообщений
 
 ```typescript
@@ -251,7 +290,8 @@ async function sendFile() {
 - `connect()` - Подключение к WebSocket серверу
 - `disconnect()` - Отключение от сервера
 - `sendCode(phone: string)` - Отправка SMS кода на номер телефона
-- `signIn(smsToken: string, smsCode: string | number)` - Вход по SMS коду
+- `signIn(smsToken: string, smsCode: string | number)` - Вход по SMS коду (может вернуть 2FA challenge)
+- `verifyPassword(trackId: string, password: string)` - Подтверждение пароля для 2FA
 - `loginByToken(token: string)` - Вход по сохраненному токену
 - `setCallback(callback: IncomingEventCallback)` - Установка callback для входящих событий
 
@@ -365,6 +405,30 @@ npm run example:file
 - Поддержка PDF, TXT, DOC и других форматов
 - Автоматическое сканирование на вирусы
 - Ожидание завершения обработки на сервере
+
+#### Двухфакторная аутентификация
+
+```bash
+npm run example:2fa
+```
+
+**Интерактивный пример для тестирования 2FA:**
+
+Пример запросит у вас следующие данные:
+1. **Номер телефона** - в международном формате (например, +79001234567)
+2. **SMS код** - который придет на ваш телефон
+3. **Дополнительный пароль** - если у вас включена 2FA (опционально)
+4. **ID чата** - для отправки тестового сообщения (опционально)
+
+**Особенности:**
+- Автоматическое определение необходимости 2FA
+- Обработка ошибок авторизации
+- Возможность повторной попытки при ошибках
+- Валидация введенных данных
+- Красивый интерфейс с эмодзи и цветным выводом
+
+**Возможные ошибки:**
+- `second.factor.disabled.update.app` - означает, что для использования 2FA нужно обновить приложение. Клиент автоматически обрабатывает эту ошибку и выводит понятное сообщение.
 
 ## Система событий
 

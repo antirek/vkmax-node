@@ -14,7 +14,9 @@ import type {
     KeepalivePayload,
     LoginByTokenPayload,
     StartAuthPayload,
-    VerifyCodePayload
+    VerifyCodePayload,
+    VerifyPasswordPayload,
+    PasswordVerificationPayload
 } from './types.js';
 
 /**
@@ -358,11 +360,12 @@ export class MaxClient extends EventEmitter {
      * Вход в систему по SMS коду
      * 
      * Подтверждает SMS код и выполняет вход в систему.
+     * Если у пользователя включена 2FA, возвращает информацию о необходимости ввода пароля.
      * После успешного входа запускает keepalive задачу.
      * 
      * @param smsToken - Токен, полученный от sendCode()
      * @param smsCode - SMS код, полученный на телефон
-     * @returns Promise<RpcResponse> - Данные аккаунта
+     * @returns Promise<RpcResponse> - Данные аккаунта или информация о 2FA
      * @throws {Error} Если не подключен
      * @throws {Error} При неверном SMS коде
      * @throws {Error} При ошибке сервера
@@ -370,8 +373,18 @@ export class MaxClient extends EventEmitter {
      * @example
      * ```typescript
      * const token = await client.sendCode('+79001234567');
-     * const accountData = await client.signIn(token, '1234');
-     * console.log('Успешно вошли в систему');
+     * const response = await client.signIn(token, '1234');
+     * 
+     * // Проверяем, требуется ли 2FA
+     * if (response.payload.passwordChallenge) {
+     *   console.log('Требуется дополнительный пароль:', response.payload.passwordChallenge.hint);
+     *   const finalResponse = await client.verifyPassword(
+     *     response.payload.passwordChallenge.trackId, 
+     *     'mypassword'
+     *   );
+     * } else {
+     *   console.log('Успешно вошли в систему');
+     * }
      * ```
      */
     async signIn(smsToken: string, smsCode: string | number): Promise<RpcResponse> {
@@ -388,9 +401,23 @@ export class MaxClient extends EventEmitter {
 
         const responsePayload = verificationResponse.payload as VerificationPayload;
         if (responsePayload.error) {
+            // Специальная обработка ошибки обновления приложения для 2FA
+            if (responsePayload.error === "second.factor.disabled.update.app") {
+                throw new Error("Для использования двухфакторной аутентификации необходимо обновить приложение. Попробуйте использовать более новую версию клиента.");
+            }
             throw new Error(responsePayload.error);
         }
 
+        // Проверяем, требуется ли 2FA
+        if (responsePayload.passwordChallenge) {
+            console.log(`2FA required. Hint: ${responsePayload.passwordChallenge.hint}`);
+            console.log(`Email: ${responsePayload.passwordChallenge.email}`);
+            console.log(`TrackId: ${responsePayload.passwordChallenge.trackId}`);
+            // Не устанавливаем _isLoggedIn = true, так как требуется дополнительный пароль
+            return verificationResponse;
+        }
+
+        // Обычный вход без 2FA
         if (responsePayload.profile) {
             console.log(`Successfully logged in as ${responsePayload.profile.phone}`);
         }
@@ -399,6 +426,63 @@ export class MaxClient extends EventEmitter {
         await this._startKeepaliveTask();
 
         return verificationResponse;
+    }
+
+    /**
+     * Подтверждение пароля для 2FA
+     * 
+     * Отправляет дополнительный пароль для завершения двухфакторной аутентификации.
+     * Используется после успешной верификации SMS кода, если у пользователя включена 2FA.
+     * 
+     * @param trackId - Уникальный идентификатор вызова, полученный от signIn()
+     * @param password - Пароль для подтверждения
+     * @returns Promise<RpcResponse> - Данные аккаунта с токеном
+     * @throws {Error} Если не подключен
+     * @throws {Error} При неверном пароле
+     * @throws {Error} При ошибке сервера
+     * 
+     * @example
+     * ```typescript
+     * const response = await client.signIn(token, '1234');
+     * if (response.payload.passwordChallenge) {
+     *   const finalResponse = await client.verifyPassword(
+     *     response.payload.passwordChallenge.trackId, 
+     *     'mypassword'
+     *   );
+     *   console.log('Успешно вошли в систему с 2FA');
+     * }
+     * ```
+     */
+    async verifyPassword(trackId: string, password: string): Promise<RpcResponse> {
+        if (!this._connection) {
+            throw new Error("WebSocket not connected. Call .connect() first.");
+        }
+        
+        const payload: VerifyPasswordPayload = {
+            trackId: trackId,
+            password: password
+        };
+        
+        console.log(`Verifying 2FA password for trackId: ${trackId}`);
+        const passwordResponse = await this.invokeMethod(OPCODES.VERIFY_PASSWORD, payload);
+
+        const responsePayload = passwordResponse.payload as PasswordVerificationPayload;
+        if (responsePayload.error) {
+            // Специальная обработка ошибки обновления приложения для 2FA
+            if (responsePayload.error === "second.factor.disabled.update.app") {
+                throw new Error("Для использования двухфакторной аутентификации необходимо обновить приложение. Попробуйте использовать более новую версию клиента.");
+            }
+            throw new Error(responsePayload.error);
+        }
+
+        if (responsePayload.profile) {
+            console.log(`Successfully logged in with 2FA as ${responsePayload.profile.phone}`);
+        }
+
+        this._isLoggedIn = true;
+        await this._startKeepaliveTask();
+
+        return passwordResponse;
     }
 
     /**

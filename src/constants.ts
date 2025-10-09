@@ -13,7 +13,7 @@ export const WS_HOST = "wss://ws-api.oneme.ru/websocket";
 export const RPC_VERSION = 11;
 
 /** Версия приложения */
-export const APP_VERSION = "25.6.8";
+export const APP_VERSION = "25.10.3";
 
 // Opcodes for different operations
 /**
@@ -33,6 +33,8 @@ export const OPCODES = {
     START_AUTH: 17,
     /** Подтверждение SMS кода */
     VERIFY_CODE: 18,
+    /** Подтверждение пароля для 2FA */
+    VERIFY_PASSWORD: 115,
     /** Вход по сохраненному токену */
     LOGIN_BY_TOKEN: 19,
     
@@ -105,9 +107,9 @@ export const USER_AGENT = {
     /** Версия операционной системы */
     osVersion: "macOS",
     /** Название устройства */
-    deviceName: "vkmax Node.js",
+    deviceName: "Chrome",
     /** User-Agent заголовок */
-    headerUserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+    headerUserAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
     /** Локаль устройства */
     deviceLocale: "ru-RU",
     /** Версия приложения */
